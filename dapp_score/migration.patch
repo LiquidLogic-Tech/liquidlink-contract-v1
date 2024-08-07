@@ -1,0 +1,14 @@
+--- ./sources/dapp_score.move
++++ ./sources/dapp_score.move
+@@ -35 +35 @@
+-  struct DappScoreManager has key, store {
++  public struct DappScoreManager has key, store {
+@@ -45 +45 @@
+-  struct Dapp has store {
++  public struct Dapp has store {
+@@ -50 +50 @@
+-  struct DappUser has store {
++  public struct DappUser has store {
+@@ -54 +54 @@
+-  struct User has store {
++  public struct User has store {

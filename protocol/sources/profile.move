@@ -92,6 +92,7 @@ module liquidlink_protocol::profile {
 
         dof::borrow(&self.id, type_)
     }
+
     public fun df_state_exists<T, S: store>(
         self: &Profile,
         key: &ProfileKey<T>
