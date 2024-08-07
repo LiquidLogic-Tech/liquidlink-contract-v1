@@ -14,7 +14,8 @@ module liquidlink_protocol::profile {
     // === Errors ===
     const ERR_REGISTERED_MODULE: u64 = 101;
     const ERR_ALREADY_ADDED_STATE: u64 = 102;
-    const ERR_NOT_EXIST_STATE: u64 = 102;
+    const ERR_NOT_EXIST_STATE: u64 = 103;
+    const ERR_NOT_EXIST_MODULE: u64 = 104;
 
     // === Constants ===
     const VERSION: u64 = 1;
@@ -38,9 +39,7 @@ module liquidlink_protocol::profile {
     }
 
     /// Key of Profile tp access dynamic field or object dyanmic fields state
-    public struct ProfileKey<phantom T> has store{
-        id: UID
-    }
+    public struct PointKey<phantom T> has store{}
 
     public struct Profile has key{
         id: UID,
@@ -55,7 +54,7 @@ module liquidlink_protocol::profile {
     // === Public-Mutative Functions ===
     public fun borrow_df_state_mut<T, S: store>(
         self: &mut Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):&mut S{
         let type_ = type_name::get<T>();
         assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -65,7 +64,7 @@ module liquidlink_protocol::profile {
 
     public fun borrow_dof_state_mut<T, S: key + store>(
         self: &mut Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):&mut S{
         let type_ = type_name::get<T>();
         assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -76,7 +75,7 @@ module liquidlink_protocol::profile {
     // === Public-View Functions ===
     public fun borrow_df_state<T, S: store>(
         self: &Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):&S{
         let type_ = type_name::get<T>();
         assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -85,7 +84,7 @@ module liquidlink_protocol::profile {
     }
     public fun borrow_dof_state<T, S: key + store>(
         self: &Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):&S{
         let type_ = type_name::get<T>();
         assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -95,14 +94,14 @@ module liquidlink_protocol::profile {
 
     public fun df_state_exists<T, S: store>(
         self: &Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):bool{
         let type_ = type_name::get<T>();
         df::exists_(&self.id, type_)
     }
     public fun dof_state_exists<T, S: key + store>(
         self: &Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):bool{
         let type_ = type_name::get<T>();
         dof::exists_(&self.id, type_)
@@ -110,14 +109,14 @@ module liquidlink_protocol::profile {
 
     public fun df_state_exists_with_type<T, S: store>(
         self: &Profile,
-        key: &ProfileKey<T>,
+        key: &PointKey<T>,
     ):bool{
         let type_ = type_name::get<T>();
         df::exists_with_type<TypeName, S>(&self.id, type_)
     }
     public fun dof_state_exists_with_type<T, S: key + store>(
         self: &Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):bool{
         let type_ = type_name::get<T>();
         dof::exists_with_type<TypeName, S>(&self.id, type_)
@@ -142,20 +141,31 @@ module liquidlink_protocol::profile {
         _: &AdmincCap,
         reg: &mut ProfileRegistry,
         ctx: &mut TxContext
-    ):ProfileKey<T>{
+    ):PointKey<T>{
         assert!(!reg.modules.contains(&type_name::get<T>()), ERR_REGISTERED_MODULE);
 
         reg.modules.insert(type_name::get<T>());
 
-        ProfileKey<T>{
-            id: object::new(ctx)
-        }
+        PointKey<T>{}
     }
+
+    public fun remove_module<T: drop>(
+        _: &AdmincCap,
+        profile_key: PointKey<T>,
+        reg: &mut ProfileRegistry,
+        ctx: &mut TxContext
+    ){
+        assert!(reg.modules.contains(&type_name::get<T>()), ERR_NOT_EXIST_MODULE);
+        let PointKey<T>{} = profile_key;
+
+        reg.modules.remove(&type_name::get<T>());
+    }
+
     
     // === Public-Package Functions ===
     public fun add_df_state<T, S: store>(
         self: &mut Profile,
-        key: &ProfileKey<T>,
+        key: &PointKey<T>,
         state: S
     ){
         let type_ = type_name::get<T>();
@@ -166,7 +176,7 @@ module liquidlink_protocol::profile {
 
     public fun add_dof_state<T, S: key + store>(
         self: &mut Profile,
-        key: &ProfileKey<T>,
+        key: &PointKey<T>,
         state: S
     ){
         let type_ = type_name::get<T>();
@@ -177,7 +187,7 @@ module liquidlink_protocol::profile {
 
     public fun remove_df_state<T, S: store>(
         self: &mut Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):S{
         let type_ = type_name::get<T>();
         assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -187,7 +197,7 @@ module liquidlink_protocol::profile {
 
     public fun remove_dof_state<T, S: key + store>(
         self: &mut Profile,
-        key: &ProfileKey<T>
+        key: &PointKey<T>
     ):S{
         let type_ = type_name::get<T>();
         assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -255,9 +265,7 @@ module liquidlink_protocol::profile {
             registry: table::new(ctx),
             modules: vec_set::empty()
         };
-        let profile_key = ProfileKey<PROFILE>{
-            id: object::new(ctx)
-        };
+        let profile_key = PointKey<PROFILE>{};
         let mut profile = new(&mut registry, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
         profile.add_df_state(
             &profile_key,
