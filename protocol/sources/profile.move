@@ -14,11 +14,13 @@ module liquidlink_protocol::profile {
     // === Errors ===
     const ERR_REGISTERED_MODULE: u64 = 101;
     const ERR_ALREADY_ADDED_STATE: u64 = 102;
+    const ERR_NOT_EXIST_STATE: u64 = 102;
 
     // === Constants ===
-    const NAME: vector<u8> = b"{display_name}";
+    const VERSION: u64 = 1;
+    const NAME: vector<u8> = b"{name}";
     const IMAGE_URL: vector<u8> = b"https://liquidlink.io/api/profile/{id}/image";
-    const DESCRIPTION: vector<u8> = b"{display_name}'s profile at LiquidLink. Check it out at https://liquidlink.io/{id}. Create your own at https://liquidlink.io";
+    const DESCRIPTION: vector<u8> = b"{name}'s profile at LiquidLink. Check it out at https://liquidlink.io/{id}. Create your own at https://liquidlink.io";
 
     public struct PROFILE has drop {}
 
@@ -29,6 +31,7 @@ module liquidlink_protocol::profile {
 
     public struct ProfileRegistry has key{
         id: UID,
+        version: u64,
         /// Mapping owner address to Profile ID
         registry: Table<address, ID>,
         modules: VecSet<TypeName>
@@ -42,7 +45,7 @@ module liquidlink_protocol::profile {
     public struct Profile has key{
         id: UID,
         avatar_url: String,
-        display_name: String,
+        name: String,
         description: String,
         metadata: VecMap<String, String>
     }
@@ -50,13 +53,80 @@ module liquidlink_protocol::profile {
     // === Method Aliases ===
 
     // === Public-Mutative Functions ===
+    public fun borrow_df_state_mut<T, S: store>(
+        self: &mut Profile,
+        key: &ProfileKey<T>
+    ):&mut S{
+        let type_ = type_name::get<T>();
+        assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+
+        df::borrow_mut(&mut self.id, type_)
+    }
+
+    public fun borrow_dof_state_mut<T, S: key + store>(
+        self: &mut Profile,
+        key: &ProfileKey<T>
+    ):&mut S{
+        let type_ = type_name::get<T>();
+        assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+
+        dof::borrow_mut(&mut self.id, type_)
+    }
 
     // === Public-View Functions ===
+    public fun borrow_df_state<T, S: store>(
+        self: &Profile,
+        key: &ProfileKey<T>
+    ):&S{
+        let type_ = type_name::get<T>();
+        assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+
+        df::borrow(&self.id, type_)
+    }
+    public fun borrow_dof_state<T, S: key + store>(
+        self: &Profile,
+        key: &ProfileKey<T>
+    ):&S{
+        let type_ = type_name::get<T>();
+        assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+
+        dof::borrow(&self.id, type_)
+    }
+    public fun df_state_exists<T, S: store>(
+        self: &Profile,
+        key: &ProfileKey<T>
+    ):bool{
+        let type_ = type_name::get<T>();
+        df::exists_(&self.id, type_)
+    }
+    public fun dof_state_exists<T, S: key + store>(
+        self: &Profile,
+        key: &ProfileKey<T>
+    ):bool{
+        let type_ = type_name::get<T>();
+        dof::exists_(&self.id, type_)
+    }
+
+    public fun df_state_exists_with_type<T, S: store>(
+        self: &Profile,
+        key: &ProfileKey<T>,
+    ):bool{
+        let type_ = type_name::get<T>();
+        df::exists_with_type<TypeName, S>(&self.id, type_)
+    }
+    public fun dof_state_exists_with_type<T, S: key + store>(
+        self: &Profile,
+        key: &ProfileKey<T>
+    ):bool{
+        let type_ = type_name::get<T>();
+        dof::exists_with_type<TypeName, S>(&self.id, type_)
+    }
 
     // === Admin Functions ===
     fun init(owt: PROFILE, ctx: &mut TxContext){
         let reg = ProfileRegistry{
             id: object::new(ctx),
+            version: VERSION,
             registry: table::new(ctx),
             modules: vec_set::empty()
         };
@@ -104,19 +174,38 @@ module liquidlink_protocol::profile {
         dof::add(&mut self.id, type_, state);
     }
 
+    public fun remove_df_state<T, S: store>(
+        self: &mut Profile,
+        key: &ProfileKey<T>
+    ):S{
+        let type_ = type_name::get<T>();
+        assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+
+        df::remove(&mut self.id, type_)
+    }
+
+    public fun remove_dof_state<T, S: key + store>(
+        self: &mut Profile,
+        key: &ProfileKey<T>
+    ):S{
+        let type_ = type_name::get<T>();
+        assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+
+        dof::remove(&mut self.id, type_)
+    }
 
     // === Private Functions ===
     fun new (
         registry: &mut ProfileRegistry,
         avatar_url: String,
-        display_name: String,
+        name: String,
         description: String,
         ctx: &mut TxContext
     ): Profile {
         let profile = Profile{
             id: object::new(ctx),
             avatar_url,
-            display_name,
+            name,
             description,
             metadata: vec_map::empty()
         };
@@ -134,7 +223,7 @@ module liquidlink_protocol::profile {
         let Profile {
             id,
             avatar_url: _,
-            display_name: _,
+            name: _,
             description: _,
             metadata: _,
         } = profile;
@@ -143,6 +232,7 @@ module liquidlink_protocol::profile {
 
         object::delete(id);
     }
+
     // === Test Functions ===
 
     #[test_only]
@@ -160,6 +250,7 @@ module liquidlink_protocol::profile {
         
         let mut registry = ProfileRegistry{
             id: object::new(ctx),
+            version: VERSION,
             registry: table::new(ctx),
             modules: vec_set::empty()
         };
