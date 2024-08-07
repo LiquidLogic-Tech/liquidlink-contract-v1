@@ -1,7 +1,7 @@
 #[test_only]
 module liquidlink_protocol::protocol_tests {
     // uncomment this line to import the module
-    // use protocol::protocol;
+    use liquidlink_protocol::profile;
 
     const ENotImplemented: u64 = 0;
 
