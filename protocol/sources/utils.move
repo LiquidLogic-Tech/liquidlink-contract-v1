@@ -5,4 +5,11 @@ module liquidlink_protocol::utils {
         clock::timestamp_ms(clock) / 1000
     }
 
+    fun is_valid_time<T>(
+        last_update: u64,
+        frequency: u64,
+        clock: &Clock
+    ):bool{
+        (last_update + frequency <= timestamp_sec(clock))
+    }
 }

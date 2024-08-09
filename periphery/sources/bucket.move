@@ -4,30 +4,25 @@ module liquidlink_periphery::bucket {
     use sui::vec_map::{Self, VecMap};
     use sui::clock::Clock;
     use sui::object_bag::{Self, ObjectBag};
+    use sui::event;
 
     use liquidlink_protocol::profile::{Self, AdmincCap, ProfileRegistry};
     use liquidlink_protocol::point::PointKey;
+    use liquidlink_protocol::point_periphery;
     use liquidlink_protocol::utils;
 
+    // === Constants ===
+    const BUCKET_VERSION: u64 = 1;
+
+    // === Struct ===
     public struct Bucket has drop {}
 
     /// time window
     /// repeated times prevent wash-trading
-    public struct BucketPeripheryV0 has key{
-        id: UID,
-        point_key: Option<PointKey<Bucket>>,
-        /// Mapping owner address to BucketStateV0
-        profile_state: ObjectBag,
-        /// frequency
-        frequency: u64,
-        /// locked
-        locked: bool
-    }
-
     public struct BucketStateV0 has store{
         /// Mapping assetType to Borrow_state
         borrow: VecMap<TypeName, Borrow>,
-        /// Mapping assetType to PSM_state
+        /// Mapping assetType to PSMIn_state
         psm_in: VecMap<TypeName, PSMIn>
     }
     public struct Borrow has store{
@@ -42,9 +37,8 @@ module liquidlink_periphery::bucket {
         minted_buck: u64,
         last_update:u64,
     }
+    public struct Event has copy, drop{
 
-    fun is_valid_time(last_update: u64, frequency:u64, clock: &Clock):bool{
-        (last_update + frequency <= utils::timestamp_sec(clock))
     }
 
     public fun new(
@@ -63,6 +57,17 @@ module liquidlink_periphery::bucket {
         };
 
         transfer::share_object(periphery);
+    }
+
+    /// Internal logic for calculating points by specific rules determined by each protocol
+    public fun calculate_state_v0_point(state: &BucketStateV0):u64{
+
+    }
+
+    fun log_point_data(){
+        event::emit(
+
+        )
     }
     
 }
