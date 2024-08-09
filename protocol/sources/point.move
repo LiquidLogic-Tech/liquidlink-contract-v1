@@ -1,5 +1,4 @@
 module liquidlink_protocol::point {
-
     use liquidlink_protocol::decimal::{Self, Decimal};
 
     /// PointKey to access Point instance

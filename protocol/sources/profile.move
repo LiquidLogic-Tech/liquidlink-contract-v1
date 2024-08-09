@@ -140,7 +140,7 @@ module liquidlink_protocol::profile {
         transfer::transfer(cap, ctx.sender());
     }
 
-    public fun register_module<T:drop>(
+    public fun register_point_module<T:drop>(
         _: &AdmincCap,
         reg: &mut ProfileRegistry,
         ctx: &mut TxContext
