@@ -11,9 +11,7 @@ module liquidlink_periphery::bucket {
     use liquidlink_protocol::utils;
 
     // === Constants ===
-    const BUCKET_VERSION: u64 = 1;
-
-    // === Struct ===
+    const BUCKET_VERSION: u64 = 1; // === Struct ===
     public struct Bucket has drop {}
 
     public struct BucketPointPeripheryV0 has key{
@@ -147,16 +145,9 @@ module liquidlink_periphery::bucket {
         let weight = &mut weights[&type_];
         if(is_asset) weight.asset = val else weight.minted_buck = val;
     }
-
-
-    public fun new<T:drop>(
-        cap: &AdmincCap,
-        reg: &mut ProfileRegistry,
-        ctx: &mut TxContext
-    ){
+    public fun new<T:drop>( ctx: &mut TxContext){ 
         let point_key = profile::register_point_module(cap, reg, ctx);
-        let periphery = BucketPointPeripheryV0{
-            id: object::new(ctx),
+        let periphery = BucketPointPeripheryV0{ id: object::new(ctx),
             version: BUCKET_VERSION,
             point_key: option::some(point_key),
             frequency: 0,
@@ -169,6 +160,25 @@ module liquidlink_periphery::bucket {
         transfer::share_object(periphery);
     }
 
+    // Entry Functions
+    public fun update_profile_borrow<T>(
+        self: &mut BucketPointPeripheryV0,
+        owner: address,
+        acc_collateral_value: u64,
+        minted_buck: u64,
+        clock: &Clock
+    ){
+        check_and_add_profile_state<T>(self);
+        let bucket_state = &mut self.profile_state[type_];
+            
+        check_and_add_borrow<T>(&mut self.borrow);
+
+        let borrow_mut = &mut bucket_state.borrow[&type_name::get<T>()];
+
+        borrow_mut.times = borrow_mut.times + 1;
+        borrow_mut.
+    }
+
     /// Internal logic for calculating points by specific rules determined by each protocol
     public fun calculate_state_v0_point(state: &BucketStateV0):u64{
         0
@@ -176,6 +186,35 @@ module liquidlink_periphery::bucket {
 
     fun is_valid_version(self: &BucketPointPeripheryV0):bool{
         self.version == BUCKET_VERSION
+    }
+
+    fun check_and_add_profile_state<T>(
+        self: &mut BucketPointPeripheryV0
+    ){
+        let type_ = type_name::get<T>();
+        if(!self.profile_state.contains(type_)){
+            self.profile_state.add(
+                type_, 
+                BucketStateV0{
+                    borrow: vec_map::empty(),
+                    psm_in: vec_map::empty(),
+                }
+            )
+        };
+    }
+
+    fun check_and_add_borrow<T>(
+        borrow_state: &mut VecMap<TypeName, Borrow>
+    ){
+        let type_ = type_name::get<T>();
+        if(!borrow_state.contains(type_)){
+            borrow_state.insert(type_, Borrow{
+                times: 0,
+                acc_collateral_value: 0,
+                minted_buck: 0,
+                last_update: 0
+            })
+        };
     }
 
     fun log_point_data(){
