@@ -1,5 +1,6 @@
 module liquidlink_protocol::point {
     use sui::event;
+    use sui::table::{Self, Table};
 
     use liquidlink_protocol::constant;
 
@@ -8,6 +9,15 @@ module liquidlink_protocol::point {
     /// PointKey to access Point instance
     public struct PointKey<phantom T> has store{}
 
+    public(package) fun new_key<T>():PointKey<T>{
+        PointKey<T>{}
+    }
+
+    public(package) fun drop_key<T>(key: PointKey<T>){
+        let PointKey<T>{} = key;
+    }
+
+    /// PointReq to send the update point request
     public struct AddPointRequest<phantom T> has key{
         id: UID,
         owner: address,
@@ -17,6 +27,24 @@ module liquidlink_protocol::point {
         id: UID,
         owner: address,
         value: u256
+    }
+
+    /// Poiont Dashboard shared object
+    public struct PointDashBoard<phantom T> has key{
+        id: UID,
+        total_points: u256,
+        /// Mapping user "address" to "points"
+        user_points: Table<address, u256>
+    }
+    public fun total_points<T>(dashboard: &PointDashBoard<T>):u256{
+        dashboard.total_points
+    }
+    public fun get_user_points<T>(dashboard: &PointDashBoard<T>, user: address):u256{
+        if(dashboard.user_points.contains(user)){
+            dashboard.user_points[user]
+        }else{
+            0
+        }
     }
     
     // === event ===
@@ -29,8 +57,55 @@ module liquidlink_protocol::point {
         value: u256
     }
 
-    /// public fun
-    public fun add_point<T>(
+    //  Updater function
+    public(package) fun add_point<T>(
+        dashboard: &mut PointDashBoard<T>,
+        req: AddPointRequest<T>
+    ){
+        let AddPointRequest{
+            id,
+            owner,
+            value
+        } = req;
+        object::delete(id);
+
+        if(!dashboard.user_points.contains(owner)){
+            dashboard.user_points.add(owner, 0);
+        };
+
+        dashboard.total_points = dashboard.total_points + value;
+        let value = dashboard.user_points[owner] + value;
+        *&mut dashboard.user_points[owner] = value;
+    }
+
+    public(package) fun sub_point<T>(
+        dashboard: &mut PointDashBoard<T>,
+        req: SubPointRequest<T>
+    ){
+        let SubPointRequest{
+            id,
+            owner,
+            value
+        } = req;
+        object::delete(id);
+
+        if(!dashboard.user_points.contains(owner)){
+            dashboard.user_points.add(owner, 0);
+        };
+
+        dashboard.total_points = dashboard.total_points - value;
+        let prev_user_point = dashboard.user_points[owner];
+
+        if(prev_user_point <= value){
+            dashboard.user_points.remove(owner);
+        }else{
+            let new_value = prev_user_point - value;
+            *&mut dashboard.user_points[owner] = new_value;
+        };
+    }
+
+    //  Update Point Request
+    public fun send_add_point_req<T>(
         value: u256,   
         ctx: &mut TxContext
     ){
@@ -47,7 +122,7 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(point, constant::point_updater());
     }
-    public fun add_point_external_owner<T>(
+    public fun send_add_point_external_owner_req<T>(
         owner: address,
         value: u256,
         ctx: &mut TxContext
@@ -65,7 +140,7 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(point, constant::point_updater());
     }
-    public fun sub_point<T>(
+    public fun send_sub_point_req<T>(
         value: u256,   
         ctx: &mut TxContext
     ){
@@ -82,7 +157,7 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(point, constant::point_updater());
     }
-    public fun sub_point_external_owner<T>(
+    public fun send_sub_point_external_owner_req<T>(
         owner: address,
         value: u256,
         ctx: &mut TxContext
@@ -99,13 +174,5 @@ module liquidlink_protocol::point {
             }
         );
         transfer::transfer(point, constant::point_updater());
-    }
-
-    public(package) fun new_key<T>():PointKey<T>{
-        PointKey<T>{}
-    }
-
-    public(package) fun drop_key<T>(key: PointKey<T>){
-        let PointKey<T>{} = key;
     }
 }

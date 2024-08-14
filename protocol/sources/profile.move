@@ -9,7 +9,7 @@ module liquidlink_protocol::profile {
     use sui::dynamic_field as df;
     use sui::dynamic_object_field as dof;
 
-    use liquidlink_protocol::point::{Self, PointKey};
+    use liquidlink_protocol::point::{Self, PointKey, AddPointRequest, SubPointRequest, PointDashBoard};
     use liquidlink_protocol::event;
 
     // === Errors ===
@@ -162,6 +162,21 @@ module liquidlink_protocol::profile {
         point::drop_key(profile_key);
 
         reg.modules.remove(&type_name::get<T>());
+    }
+
+    public fun add_point_by_admin<T>(
+        dashboard: &mut PointDashBoard<T>,
+        _: &AdmincCap,
+        req: AddPointRequest<T>
+    ){
+        point::add_point(dashboard, req);
+    }
+    public fun sub_point_by_admin<T>(
+        dashboard: &mut PointDashBoard<T>,
+        _: &AdmincCap,
+        req: SubPointRequest<T>
+    ){
+        point::sub_point(dashboard, req);
     }
 
     
