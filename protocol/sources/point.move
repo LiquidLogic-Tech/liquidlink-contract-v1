@@ -3,36 +3,38 @@ module liquidlink_protocol::point {
 
     use liquidlink_protocol::constant;
 
+    // === struct ===
+
     /// PointKey to access Point instance
     public struct PointKey<phantom T> has store{}
 
     public struct AddPointRequest<phantom T> has key{
         id: UID,
-        owner: adrdress,
+        owner: address,
         value: u256
     }
     public struct SubPointRequest<phantom T> has key{
         id: UID,
-        owner: adrdress,
+        owner: address,
         value: u256
     }
     
-    /// Event
-    public struct LiquidlinkAddPointEvent<T> has copy, drop{
-        owner: adrdress,
+    // === event ===
+    public struct LiquidlinkAddPointEvent<phantom T> has copy, drop{
+        owner: address,
         value: u256
     }
-    public struct LiquidlinkSubPointEvent<T> has copy, drop{
-        owner: adrdress,
+    public struct LiquidlinkSubPointEvent<phantom T> has copy, drop{
+        owner: address,
         value: u256
     }
 
     /// public fun
-    public fun emit_add_point<T>(
+    public fun add_point<T>(
         value: u256,   
         ctx: &mut TxContext
     ){
-        let point = AddPointRequest{
+        let point = AddPointRequest<T>{
             id: object::new(ctx),
             owner: ctx.sender(),
             value
@@ -45,12 +47,12 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(point, constant::point_updater());
     }
-    public fun emit_add_point_external_owner<T>(
-        owner: adrdress,
+    public fun add_point_external_owner<T>(
+        owner: address,
         value: u256,
         ctx: &mut TxContext
     ){
-        let point = AddPointRequest{
+        let point = AddPointRequest<T>{
             id: object::new(ctx),
             owner: ctx.sender(),
             value
@@ -63,11 +65,11 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(point, constant::point_updater());
     }
-    public fun emit_sub_point<T>(
+    public fun sub_point<T>(
         value: u256,   
         ctx: &mut TxContext
     ){
-        let point = SubPointRequest{
+        let point = SubPointRequest<T>{
             id: object::new(ctx),
             owner: ctx.sender(),
             value
@@ -80,11 +82,16 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(point, constant::point_updater());
     }
-    public fun emit_sub_point_external_owner<T>(
-        owner: adrdress,
+    public fun sub_point_external_owner<T>(
+        owner: address,
         value: u256,
         ctx: &mut TxContext
     ){
+        let point = SubPointRequest<T>{
+            id: object::new(ctx),
+            owner,
+            value
+        };
         event::emit(
             LiquidlinkSubPointEvent<T>{
                 owner,
