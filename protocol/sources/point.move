@@ -6,14 +6,14 @@ module liquidlink_protocol::point {
 
     // === struct ===
 
-    /// PointKey to access Point instance
+    /// PointKey to access Profile's Point instance
     public struct PointKey<phantom T> has store{}
 
-    public(package) fun new_key<T>():PointKey<T>{
+    public(package) fun new_point_key<T>():PointKey<T>{
         PointKey<T>{}
     }
 
-    public(package) fun drop_key<T>(key: PointKey<T>){
+    public(package) fun drop_point_key<T>(key: PointKey<T>){
         let PointKey<T>{} = key;
     }
 
@@ -30,11 +30,18 @@ module liquidlink_protocol::point {
     }
 
     /// Poiont Dashboard shared object
-    public struct PointDashBoard<phantom T> has key{
+    public struct PointDashBoard<phantom T> has key, store{
         id: UID,
         total_points: u256,
         /// Mapping user "address" to "points"
         user_points: Table<address, u256>
+    }
+    public(package) fun new_point_dashboard<T>(ctx: &mut TxContext):PointDashBoard<T>{
+        PointDashBoard<T>{
+            id: object::new(ctx),
+            total_points: 0,
+            user_points: table::new(ctx)
+        }
     }
     public fun total_points<T>(dashboard: &PointDashBoard<T>):u256{
         dashboard.total_points

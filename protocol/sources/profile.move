@@ -16,7 +16,7 @@ module liquidlink_protocol::profile {
     const ERR_REGISTERED_MODULE: u64 = 101;
     const ERR_ALREADY_ADDED_STATE: u64 = 102;
     const ERR_NOT_EXIST_STATE: u64 = 103;
-    const ERR_NOT_EXIST_MODULE: u64 = 104;
+    const ERR_NOT_EXIST_TYPE: u64 = 104;
 
     // === Constants ===
     const VERSION: u64 = 1;
@@ -36,7 +36,7 @@ module liquidlink_protocol::profile {
         version: u64,
         /// Mapping owner address to Profile ID
         registry: Table<address, ID>,
-        modules: VecSet<TypeName>
+        point_modules: VecSet<TypeName>
     }
 
     public struct Profile has key{
@@ -131,7 +131,7 @@ module liquidlink_protocol::profile {
             id: object::new(ctx),
             version: VERSION,
             registry: table::new(ctx),
-            modules: vec_set::empty()
+            point_modules: vec_set::empty()
         };
         transfer::share_object(reg);
 
@@ -144,24 +144,34 @@ module liquidlink_protocol::profile {
         _: &AdmincCap,
         reg: &mut ProfileRegistry,
         ctx: &mut TxContext
-    ):PointKey<T>{
-        assert!(!reg.modules.contains(&type_name::get<T>()), ERR_REGISTERED_MODULE);
+    ){
+        let type_ = type_name::get<T>();
+        assert!(!df::exists_(&reg.id, type_), ERR_REGISTERED_MODULE);
 
-        reg.modules.insert(type_name::get<T>());
-
-        point::new_key<T>()
+        let key = point::new_point_key<T>();
+        df::add(&mut reg.id, type_, key);
     }
 
-    public fun remove_module<T: drop>(
+    public fun remove_point_module<T: drop>(
         _: &AdmincCap,
-        profile_key: PointKey<T>,
         reg: &mut ProfileRegistry,
         ctx: &mut TxContext
     ){
-        assert!(reg.modules.contains(&type_name::get<T>()), ERR_NOT_EXIST_MODULE);
-        point::drop_key(profile_key);
+        let type_ = type_name::get<T>();
+        assert!(df::exists_(&reg.id, type_), ERR_NOT_EXIST_TYPE);
 
-        reg.modules.remove(&type_name::get<T>());
+        let profile_key:PointKey<T> = df::remove(&mut reg.id, type_);
+        point::drop_point_key(profile_key);
+    }
+
+    public fun new_point_dashboard<T: drop>(
+        cap: &AdmincCap,
+        reg: &mut ProfileRegistry,
+        ctx: &mut TxContext
+    ){
+        register_point_module<T>(cap, reg, ctx);
+        let dashboard = point::new_point_dashboard<T>(ctx);
+        transfer::public_share_object(dashboard);
     }
 
     public fun add_point_by_admin<T>(
@@ -171,6 +181,7 @@ module liquidlink_protocol::profile {
     ){
         point::add_point(dashboard, req);
     }
+
     public fun sub_point_by_admin<T>(
         dashboard: &mut PointDashBoard<T>,
         _: &AdmincCap,
@@ -179,7 +190,6 @@ module liquidlink_protocol::profile {
         point::sub_point(dashboard, req);
     }
 
-    
     // === Public-Package Functions ===
     public fun add_df_state<T, S: store>(
         self: &mut Profile,
@@ -284,9 +294,9 @@ module liquidlink_protocol::profile {
             id: object::new(ctx),
             version: VERSION,
             registry: table::new(ctx),
-            modules: vec_set::empty()
+            point_modules: vec_set::empty()
         };
-        let profile_key = point::new_key<PROFILE>();
+        let profile_key = point::new_point_key<PROFILE>();
         let mut profile = new(&mut registry, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
         profile.add_df_state(
             &profile_key,
