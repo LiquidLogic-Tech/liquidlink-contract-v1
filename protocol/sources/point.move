@@ -64,6 +64,9 @@ module liquidlink_protocol::point {
         value: u256
     }
 
+    // === Method Aliases ===
+    public use fun liquidlink_protocol::profile::add_point_by_admin as PointDashBoard.add_point_by_admin;
+
     //  Updater function
     public(package) fun add_point<T>(
         dashboard: &mut PointDashBoard<T>,
@@ -112,22 +115,21 @@ module liquidlink_protocol::point {
     }
 
     //  Update Point Request
-    public fun send_add_point_req<T>(
+    public fun send_add_point_req<T: drop>(
+        value: u256,   
+        witness: T,
+        ctx: &mut TxContext
+    ){
+        send_add_point_req_<T>(constant::point_updater(), value, ctx);
+    }
+    #[test_only]
+    public fun send_add_point_req_for_testing<T: drop>(
+        witness: T,
+        updater: address,
         value: u256,   
         ctx: &mut TxContext
     ){
-        let point = AddPointRequest<T>{
-            id: object::new(ctx),
-            owner: ctx.sender(),
-            value
-        };
-        event::emit(
-            LiquidlinkAddPointEvent<T>{
-                owner: ctx.sender(),
-                value
-            }
-        );
-        transfer::transfer(point, constant::point_updater());
+        send_add_point_req_<T>(updater, value, ctx);
     }
     public fun send_add_point_external_owner_req<T>(
         owner: address,
@@ -182,4 +184,25 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(point, constant::point_updater());
     }
+
+    // private function
+    fun send_add_point_req_<T>(
+        updater: address,
+        value: u256,   
+        ctx: &mut TxContext
+    ){
+        let point = AddPointRequest<T>{
+            id: object::new(ctx),
+            owner: ctx.sender(),
+            value
+        };
+        event::emit(
+            LiquidlinkAddPointEvent<T>{
+                owner: ctx.sender(),
+                value
+            }
+        );
+        transfer::transfer(point, updater);
+    }
+
 }

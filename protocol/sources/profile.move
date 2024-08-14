@@ -17,6 +17,7 @@ module liquidlink_protocol::profile {
     const ERR_ALREADY_ADDED_STATE: u64 = 102;
     const ERR_NOT_EXIST_STATE: u64 = 103;
     const ERR_NOT_EXIST_TYPE: u64 = 104;
+    const ERR_ALREADY_REGISTERED: u64 = 105;
 
     // === Constants ===
     const VERSION: u64 = 1;
@@ -35,8 +36,7 @@ module liquidlink_protocol::profile {
         id: UID,
         version: u64,
         /// Mapping owner address to Profile ID
-        registry: Table<address, ID>,
-        point_modules: VecSet<TypeName>
+        registry: Table<address, ID>
     }
 
     public struct Profile has key{
@@ -53,6 +53,22 @@ module liquidlink_protocol::profile {
     // === Public-View Functions ===
     public fun owner(self: &Profile):address{
         self.owner
+    }
+    public fun avatar_url(self: &Profile):String{
+        self.avatar_url
+    }
+    public fun name(self: &Profile):String{
+        self.name
+    }
+    public fun description(self: &Profile):String{
+        self.description
+    }
+    public fun metadata(self: &Profile):VecMap<String, String>{
+        self.metadata
+    }
+
+    public fun profile_of(reg: &ProfileRegistry, owner: address):ID{
+        *reg.registry.borrow(owner)
     }
 
     public fun borrow_df_state<T, S: store>(
@@ -103,6 +119,12 @@ module liquidlink_protocol::profile {
         let type_ = type_name::get<T>();
         dof::exists_with_type<TypeName, S>(&self.id, type_)
     }
+    public fun module_exist<T: drop>(
+        reg: &ProfileRegistry
+    ):bool{
+        let type_ = type_name::get<T>();
+        df::exists_(&reg.id, type_)
+    }
 
     // === Public-Mutative Functions ===
     public fun borrow_df_state_mut<T, S: store>(
@@ -130,15 +152,19 @@ module liquidlink_protocol::profile {
         let reg = ProfileRegistry{
             id: object::new(ctx),
             version: VERSION,
-            registry: table::new(ctx),
-            point_modules: vec_set::empty()
+            registry: table::new(ctx)
         };
         transfer::share_object(reg);
 
         let cap = AdmincCap{ id: object::new(ctx) };
-
         transfer::transfer(cap, ctx.sender());
     }
+
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext){
+        init(PROFILE{}, ctx);
+    }
+
 
     public fun register_point_module<T:drop>(
         _: &AdmincCap,
@@ -169,7 +195,7 @@ module liquidlink_protocol::profile {
         reg: &mut ProfileRegistry,
         ctx: &mut TxContext
     ){
-        register_point_module<T>(cap, reg, ctx);
+        if(!module_exist<T>(reg)) register_point_module<T>(cap, reg, ctx);
         let dashboard = point::new_point_dashboard<T>(ctx);
         transfer::public_share_object(dashboard);
     }
@@ -191,6 +217,32 @@ module liquidlink_protocol::profile {
     }
 
     // === Public-Package Functions ===
+    public fun register(
+        reg: &mut ProfileRegistry,
+        avatar_url: String,
+        name: String,
+        description: String,
+        ctx: &mut TxContext
+    ){
+        let owner = ctx.sender();
+        let profile = register_(reg, owner, avatar_url, name, description, ctx);
+
+        transfer::transfer(profile, owner);
+    }
+
+    public fun register_for(
+        reg: &mut ProfileRegistry,
+        owner: address,
+        avatar_url: String,
+        name: String,
+        description: String,
+        ctx: &mut TxContext
+    ){
+        let profile = register_(reg, owner, avatar_url, name, description, ctx);
+
+        transfer::transfer(profile, owner);
+    }
+
     public fun add_df_state<T, S: store>(
         self: &mut Profile,
         key: &PointKey<T>,
@@ -235,13 +287,13 @@ module liquidlink_protocol::profile {
 
     // === Private Functions ===
     fun new (
-        registry: &mut ProfileRegistry,
+        reg: &mut ProfileRegistry,
+        owner: address,
         avatar_url: String,
         name: String,
         description: String,
         ctx: &mut TxContext
     ): Profile {
-        let owner = ctx.sender();
         let profile = Profile{
             id: object::new(ctx),
             owner,
@@ -250,8 +302,29 @@ module liquidlink_protocol::profile {
             description,
             metadata: vec_map::empty()
         };
-    
+        
         event::profile_created(owner, object::id(&profile));
+        profile
+    }
+    fun register_(
+        reg: &mut ProfileRegistry,
+        owner: address,
+        avatar_url: String,
+        name: String,
+        description: String,
+        ctx: &mut TxContext
+    ):Profile{
+        let profile = Profile{
+            id: object::new(ctx),
+            owner,
+            avatar_url,
+            name,
+            description,
+            metadata: vec_map::empty()
+        };
+        let profile_id = object::id(&profile);
+        event::profile_created(owner, profile_id);
+        reg.registry.add(owner, profile_id);
         
         profile
     }
@@ -293,11 +366,10 @@ module liquidlink_protocol::profile {
         let mut registry = ProfileRegistry{
             id: object::new(ctx),
             version: VERSION,
-            registry: table::new(ctx),
-            point_modules: vec_set::empty()
+            registry: table::new(ctx)
         };
         let profile_key = point::new_point_key<PROFILE>();
-        let mut profile = new(&mut registry, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
+        let mut profile = register_(&mut registry, @0xA, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
         profile.add_df_state(
             &profile_key,
             DFState{}
