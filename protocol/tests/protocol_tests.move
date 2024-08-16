@@ -19,10 +19,28 @@ module liquidlink_protocol::protocol_tests {
     const UPDATER:address = @0xA;
 
     // Mocked function for emitting the addPointRequest
-    fun send_request(value: u256, ctx: &mut TxContext){
-        point::send_add_point_req_for_testing<FAKE_OTW>(
+    fun send_add_request(
+        owner: address,
+        value: u256,
+        ctx: &mut TxContext
+    ){
+        point::send_add_point_req_with_assigned_updater<FAKE_OTW>(
             FAKE_OTW{},
             UPDATER,
+            owner,
+            value,
+            ctx
+        );
+    }
+    fun send_sub_request(
+        owner: address,
+        value: u256,
+        ctx: &mut TxContext
+    ){
+        point::send_sub_point_req_with_assigned_updater<FAKE_OTW>(
+            FAKE_OTW{},
+            UPDATER,
+            owner,
             value,
             ctx
         );
@@ -66,7 +84,7 @@ module liquidlink_protocol::protocol_tests {
             test::return_to_sender(s, profile);
         };
 
-        // register_module
+        // register_module & create dashboard
         next_tx(s,a);{
             let mut reg = test::take_shared<ProfileRegistry>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
@@ -78,10 +96,9 @@ module liquidlink_protocol::protocol_tests {
             test::return_to_sender(s, cap);
         };
 
-        // create dashboard
         let point = 123;
         next_tx(s,a);{
-            send_request(point, ctx(s))
+            send_add_request(a, point, ctx(s))
         };
 
         next_tx(s, a);{
@@ -95,7 +112,7 @@ module liquidlink_protocol::protocol_tests {
             test::return_shared(dashboard);
         };
 
-        // check points
+        // validate points
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
 
@@ -105,6 +122,31 @@ module liquidlink_protocol::protocol_tests {
             test::return_shared(dashboard);
         };
 
+        // sub points
+        next_tx(s,a);{
+            send_sub_request(a, point, ctx(s))
+        };
+
+        next_tx(s, a);{
+            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let cap = test::take_from_sender<AdmincCap>(s);
+
+            let req = test::take_from_sender<SubPointRequest<FAKE_OTW>>(s);
+            dashboard.sub_point_by_admin(&cap, req);
+    
+            test::return_to_sender(s, cap);
+            test::return_shared(dashboard);
+        };
+
+        // validate points
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+
+            let user_point = dashboard.get_user_points(a);
+            assert!(user_point == 0, 404);
+
+            test::return_shared(dashboard);
+        };
 
         clock.destroy_for_testing();
         scenario.end();
