@@ -128,8 +128,8 @@ module liquidlink_protocol::point {
         ctx: &mut TxContext
     ){
         send_add_point_req_<T>(updater, owner, value, ctx);
-    }``
-    public fun send_add_point_external_owner_req<T>(
+    }
+    public fun send_add_point_req_with_owner<T>(
         owner: address,
         value: u256,
         ctx: &mut TxContext
@@ -154,7 +154,7 @@ module liquidlink_protocol::point {
     ){
         send_sub_point_req_<T>(updater, owner, value, ctx);
     }
-    public fun send_sub_point_external_owner_req<T>(
+    public fun send_sub_point_req_with_owner<T>(
         owner: address,
         value: u256,
         ctx: &mut TxContext

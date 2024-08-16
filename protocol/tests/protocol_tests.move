@@ -16,6 +16,18 @@ module liquidlink_protocol::protocol_tests {
     }
 
     public struct FAKE_OTW has drop {}
+    
+    public struct FakeProfileState has key, store{
+        id: UID,
+        value: u64
+    }
+    fun drop_state(s: FakeProfileState){
+        let FakeProfileState{
+            id,
+            value: _
+        } = s;
+        object::delete(id);
+    }
     const UPDATER:address = @0xA;
 
     // Mocked function for emitting the addPointRequest
@@ -130,8 +142,8 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s, a);{
             let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
-
             let req = test::take_from_sender<SubPointRequest<FAKE_OTW>>(s);
+
             dashboard.sub_point_by_admin(&cap, req);
     
             test::return_to_sender(s, cap);
@@ -141,11 +153,73 @@ module liquidlink_protocol::protocol_tests {
         // validate points
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-
             let user_point = dashboard.get_user_points(a);
+
             assert!(user_point == 0, 404);
 
             test::return_shared(dashboard);
+        };
+
+        // insert the state into profile slot 
+        next_tx(s,a);{
+            let mut reg = test::take_shared<ProfileRegistry>(s);
+            let point_key_mut = profile::point_key_mut<FAKE_OTW>(&mut reg, FAKE_OTW{});
+            let mut profile = test::take_from_sender<Profile>(s);
+            // update both df & dof state
+            profile.add_df_state<FAKE_OTW,FakeProfileState>(point_key_mut, FakeProfileState{
+                id: object::new(ctx(s)),
+                value: 0
+            });
+            profile.add_dof_state<FAKE_OTW,FakeProfileState>(point_key_mut, FakeProfileState{
+                id: object::new(ctx(s)),
+                value: 0
+            });
+            
+            test::return_to_sender(s, profile);
+            test::return_shared(reg);
+        };
+
+        // retrieve the profile state
+        next_tx(s,a);{
+            let reg = test::take_shared<ProfileRegistry>(s);
+            // don't require witness instance
+            let point_key = profile::point_key<FAKE_OTW>(&reg);
+            let profile = test::take_from_sender<Profile>(s);
+            // update both df & dof state
+            let df_state = profile.borrow_df_state<FAKE_OTW, FakeProfileState>(point_key);
+            let dof_state = profile.borrow_dof_state<FAKE_OTW, FakeProfileState>(point_key);
+
+            assert!(df_state.value == 0, 404);
+            assert!(df_state.value == dof_state.value, 404);
+            
+            test::return_to_sender(s, profile);
+            test::return_shared(reg);
+        };
+
+        // remove the state
+        next_tx(s,a);{
+            let mut reg = test::take_shared<ProfileRegistry>(s);
+            let point_key_mut = profile::point_key_mut<FAKE_OTW>(&mut reg, FAKE_OTW{});
+            let mut profile = test::take_from_sender<Profile>(s);
+            // update both df & dof state
+            let df_state = profile.remove_df_state<FAKE_OTW,FakeProfileState>(point_key_mut);
+            df_state.drop_state();
+            let dof_state = profile.remove_dof_state<FAKE_OTW,FakeProfileState>(point_key_mut);
+            dof_state.drop_state();
+            
+            test::return_to_sender(s, profile);
+            test::return_shared(reg);
+        };
+        
+        // burn the profile
+        next_tx(s,a);{
+            let mut reg = test::take_shared<ProfileRegistry>(s);
+            let profile = test::take_from_sender<Profile>(s);
+            
+            profile.drop(&mut reg);
+            assert!(reg.profile_contains(a) == false, 404);
+
+            test::return_shared(reg);
         };
 
         clock.destroy_for_testing();

@@ -66,9 +66,15 @@ module liquidlink_protocol::profile {
     public fun metadata(self: &Profile):VecMap<String, String>{
         self.metadata
     }
-
+    public fun profile_contains(reg: &ProfileRegistry, owner: address):bool{
+        reg.registry.contains(owner)
+    }
     public fun profile_of(reg: &ProfileRegistry, owner: address):ID{
         *reg.registry.borrow(owner)
+    }
+    // Point
+    public fun point_key<T: drop>(reg: &ProfileRegistry):&PointKey<T>{
+        df::borrow(&reg.id, type_name::get<T>())
     }
 
     public fun borrow_df_state<T, S: store>(
@@ -127,6 +133,12 @@ module liquidlink_protocol::profile {
     }
 
     // === Public-Mutative Functions ===
+    public fun point_key_mut<T: drop>(
+        reg: &mut ProfileRegistry,
+        witness: T
+    ):&mut PointKey<T>{
+        df::borrow_mut(&mut reg.id, type_name::get<T>())
+    }
     public fun borrow_df_state_mut<T, S: store>(
         self: &mut Profile,
         key: &PointKey<T>
@@ -164,7 +176,6 @@ module liquidlink_protocol::profile {
     public fun init_for_testing(ctx: &mut TxContext){
         init(PROFILE{}, ctx);
     }
-
 
     public fun register_point_module<T:drop>(
         _: &AdmincCap,
@@ -242,10 +253,28 @@ module liquidlink_protocol::profile {
 
         transfer::transfer(profile, owner);
     }
+    public fun drop(
+        profile: Profile,
+        reg: &mut ProfileRegistry
+    ){
+        let Profile {
+            id,
+            owner,
+            avatar_url: _,
+            name: _,
+            description: _,
+            metadata: _,
+        } = profile;
+
+        let profile_id = reg.registry.remove(owner);
+
+        event::profile_destroyed(owner, profile_id);
+        object::delete(id);
+    }
 
     public fun add_df_state<T, S: store>(
         self: &mut Profile,
-        key: &PointKey<T>,
+        key: &mut PointKey<T>,
         state: S
     ){
         let type_ = type_name::get<T>();
@@ -256,7 +285,7 @@ module liquidlink_protocol::profile {
 
     public fun add_dof_state<T, S: key + store>(
         self: &mut Profile,
-        key: &PointKey<T>,
+        key: &mut PointKey<T>,
         state: S
     ){
         let type_ = type_name::get<T>();
@@ -267,20 +296,20 @@ module liquidlink_protocol::profile {
 
     public fun remove_df_state<T, S: store>(
         self: &mut Profile,
-        key: &PointKey<T>
+        key: &mut PointKey<T>
     ):S{
         let type_ = type_name::get<T>();
-        assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+        assert!(df::exists_(&self.id, type_), ERR_NOT_EXIST_STATE);
 
         df::remove(&mut self.id, type_)
     }
 
     public fun remove_dof_state<T, S: key + store>(
         self: &mut Profile,
-        key: &PointKey<T>
+        key: &mut PointKey<T>
     ):S{
         let type_ = type_name::get<T>();
-        assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
+        assert!(dof::exists_(&self.id, type_), ERR_NOT_EXIST_STATE);
 
         dof::remove(&mut self.id, type_)
     }
@@ -329,27 +358,7 @@ module liquidlink_protocol::profile {
         profile
     }
 
-    fun destroy(
-        profile: Profile,
-        reg: &mut ProfileRegistry,
-        ctx: &TxContext
-    ) {
-        let Profile {
-            id,
-            owner: _,
-            avatar_url: _,
-            name: _,
-            description: _,
-            metadata: _,
-        } = profile;
-
-        event::profile_destroyed(ctx.sender(), id.uid_to_inner());
-
-        object::delete(id);
-    }
-
     // === Test Functions ===
-
     #[test_only]
     use sui::test_utils;
     #[test_only]
@@ -368,16 +377,16 @@ module liquidlink_protocol::profile {
             version: VERSION,
             registry: table::new(ctx)
         };
-        let profile_key = point::new_point_key<PROFILE>();
+        let mut profile_key = point::new_point_key<PROFILE>();
         let mut profile = register_(&mut registry, @0xA, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
         profile.add_df_state(
-            &profile_key,
+            &mut profile_key,
             DFState{}
         );
 
-        profile.add_dof_state(&profile_key, DOFState{id: object::new(ctx)});
+        profile.add_dof_state(&mut profile_key, DOFState{id: object::new(ctx)});
 
-        profile.destroy(&mut registry, ctx);
+        profile.drop(&mut registry);
 
         test_utils::destroy(registry);
         test_utils::destroy(profile_key);
