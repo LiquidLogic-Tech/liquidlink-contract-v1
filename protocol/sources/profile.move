@@ -201,15 +201,6 @@ module liquidlink_protocol::profile {
         point::drop_point_key(profile_key);
     }
 
-    public fun add_action_config_by_admin<T: drop, Action>(
-        self: &mut PointDashBoard<T>,
-        _: &AdmincCap,
-        weight: u64,
-        duration: u64
-    ){
-        self.add_action_config<T, Action>(weight, duration);
-    }
-
     public fun new_point_dashboard<T: drop>(
         cap: &AdmincCap,
         reg: &mut ProfileRegistry,

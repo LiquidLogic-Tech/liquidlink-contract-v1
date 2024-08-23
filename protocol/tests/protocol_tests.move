@@ -224,16 +224,6 @@ module liquidlink_protocol::protocol_tests {
             test::return_shared(reg);
         };
 
-        // add config
-        next_tx(s,a);{
-            let cap = test::take_from_sender<AdmincCap>(s);
-            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-
-            dashboard.add_action_config_by_admin<FAKE_OTW, FAKE_BORROW>(&cap, 1000, 86400);
-            
-            test::return_shared(dashboard);
-            test::return_to_sender(s, cap);
-        };
 
 
         clock.destroy_for_testing();
