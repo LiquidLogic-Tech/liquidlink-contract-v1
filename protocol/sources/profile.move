@@ -141,7 +141,7 @@ module liquidlink_protocol::profile {
     }
     public fun borrow_df_state_mut<T, S: store>(
         self: &mut Profile,
-        key: &PointKey<T>
+        key: &mut PointKey<T>
     ):&mut S{
         let type_ = type_name::get<T>();
         assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -151,7 +151,7 @@ module liquidlink_protocol::profile {
 
     public fun borrow_dof_state_mut<T, S: key + store>(
         self: &mut Profile,
-        key: &PointKey<T>
+        key: &mut PointKey<T>
     ):&mut S{
         let type_ = type_name::get<T>();
         assert!(dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -199,6 +199,15 @@ module liquidlink_protocol::profile {
 
         let profile_key:PointKey<T> = df::remove(&mut reg.id, type_);
         point::drop_point_key(profile_key);
+    }
+
+    public fun add_action_config_by_admin<T: drop, Action>(
+        self: &mut PointDashBoard<T>,
+        _: &AdmincCap,
+        weight: u64,
+        duration: u64
+    ){
+        self.add_action_config<T, Action>(weight, duration);
     }
 
     public fun new_point_dashboard<T: drop>(

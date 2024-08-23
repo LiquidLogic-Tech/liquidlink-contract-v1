@@ -16,6 +16,8 @@ module liquidlink_protocol::protocol_tests {
     }
 
     public struct FAKE_OTW has drop {}
+
+    public struct FAKE_BORROW {}
     
     public struct FakeProfileState has key, store{
         id: UID,
@@ -128,7 +130,7 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
 
-            let user_point = dashboard.get_user_points(a);
+            let user_point = dashboard.get_user_iufo_points(a);
             assert!(user_point == point, 404);
 
             test::return_shared(dashboard);
@@ -153,7 +155,7 @@ module liquidlink_protocol::protocol_tests {
         // validate points
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_points(a);
+            let user_point = dashboard.get_user_iufo_points(a);
 
             assert!(user_point == 0, 404);
 
@@ -221,6 +223,18 @@ module liquidlink_protocol::protocol_tests {
 
             test::return_shared(reg);
         };
+
+        // add config
+        next_tx(s,a);{
+            let cap = test::take_from_sender<AdmincCap>(s);
+            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+
+            dashboard.add_action_config_by_admin<FAKE_OTW, FAKE_BORROW>(&cap, 1000, 86400);
+            
+            test::return_shared(dashboard);
+            test::return_to_sender(s, cap);
+        };
+
 
         clock.destroy_for_testing();
         scenario.end();
