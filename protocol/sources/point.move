@@ -118,12 +118,14 @@ module liquidlink_protocol::point {
     public struct LiquidlinkStakePointEvent<phantom T, phantom Action> has copy, drop{
         owner: address,
         weight: u256,
-        timestamp: u64
+        timestamp: u64,
+        duration: u64
     }
     public struct LiquidlinkUnstakePointEvent<phantom T, phantom Action> has copy, drop{
         owner: address,
         weight: u256,
-        timestamp: u64
+        timestamp: u64,
+        duration: u64
     }
 
     // === Method Aliases ===
@@ -131,7 +133,6 @@ module liquidlink_protocol::point {
     public use fun liquidlink_protocol::profile::sub_point_by_admin as PointDashBoard.sub_point_by_admin;
     public use fun liquidlink_protocol::profile::stake_point_by_admin as PointDashBoard.stake_point_by_admin;
     public use fun liquidlink_protocol::profile::unstake_point_by_admin as PointDashBoard.unstake_point_by_admin;
-
 
     //  Updater function
     public(package) fun add_point<T>(
@@ -202,15 +203,12 @@ module liquidlink_protocol::point {
             );
         }else{
             let config = &mut info.configs[&type_];
-            let acc_points = calculate_action_points(config, timestamp);
+            let acc_points = config.checkpoint(timestamp, weight, duration, true);
                
             // update dashboard
             dashboard.total_points = dashboard.total_points + acc_points;
             // update personal information
             info.points = info.points + acc_points;
-            config.weight = weight;
-            config.last_update = timestamp;
-            config.duration = duration;
         }
     }
 
@@ -237,7 +235,7 @@ module liquidlink_protocol::point {
 
         if(info.configs.contains(&type_)){
             let config = &mut info.configs[&type_];
-            let acc_points = config.checkpoint(timestamp, weight, duration);
+            let acc_points = config.checkpoint(timestamp, weight, duration, false);
 
             // update dashboard
             dashboard.total_points = dashboard.total_points + acc_points;
@@ -440,7 +438,8 @@ module liquidlink_protocol::point {
             LiquidlinkStakePointEvent<T, Action>{
                 owner,
                 weight,
-                timestamp
+                timestamp,
+                duration
             }
         );
         transfer::transfer(req, updater);
@@ -449,7 +448,7 @@ module liquidlink_protocol::point {
     fun send_unstake_point_req_<T, Action>(
         updater: address,
         owner: address,
-        weight: u256,   
+        weight: u256,
         duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
@@ -466,7 +465,8 @@ module liquidlink_protocol::point {
             LiquidlinkUnstakePointEvent<T, Action>{
                 owner,
                 weight,
-                timestamp
+                timestamp,
+                duration
             }
         );
         transfer::transfer(req, updater);
@@ -476,10 +476,16 @@ module liquidlink_protocol::point {
         config: &mut Config,
         timestamp: u64,
         weight: u256,
-        duration: u64
+        duration: u64,
+        stake: bool
     ):u256{
         let acc_points = calculate_action_points(config, timestamp);
-
+        let weight = if(stake){
+            config.weight + weight
+        }else{
+            if(config.weight < weight) 0 else config.weight - weight
+        };
+std::debug::print(&weight);
         config.weight = weight;
         config.last_update = timestamp;
         config.duration = duration;

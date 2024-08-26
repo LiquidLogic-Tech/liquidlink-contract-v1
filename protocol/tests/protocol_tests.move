@@ -331,7 +331,7 @@ module liquidlink_protocol::protocol_tests {
 
         // unstake half point
         next_tx(s,a);{
-            let weight = 0_500_000_000; // 1 SU1
+            let weight = 0_500_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
             let duration = 86400 * 1000; // 1 day in ms
             send_unstake_request<FAKE_BORROW>(a, weight, duration, &clock, ctx(s));
         };
