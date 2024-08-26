@@ -44,6 +44,7 @@ module liquidlink_protocol::point {
         id: UID,
         owner: address,
         weight: u256,
+        duration: u64,
         timestamp: u64
     }
 
@@ -129,6 +130,7 @@ module liquidlink_protocol::point {
     public use fun liquidlink_protocol::profile::add_point_by_admin as PointDashBoard.add_point_by_admin;
     public use fun liquidlink_protocol::profile::sub_point_by_admin as PointDashBoard.sub_point_by_admin;
     public use fun liquidlink_protocol::profile::stake_point_by_admin as PointDashBoard.stake_point_by_admin;
+    public use fun liquidlink_protocol::profile::unstake_point_by_admin as PointDashBoard.unstake_point_by_admin;
 
 
     //  Updater function
@@ -199,11 +201,47 @@ module liquidlink_protocol::point {
                 }
             );
         }else{
-            // checkpoint accumulated points
-            let config = &info.configs[&type_];
+            let config = &mut info.configs[&type_];
             let acc_points = calculate_action_points(config, timestamp);
-            
+               
+            // update dashboard
             dashboard.total_points = dashboard.total_points + acc_points;
+            // update personal information
+            info.points = info.points + acc_points;
+            config.weight = weight;
+            config.last_update = timestamp;
+            config.duration = duration;
+        }
+    }
+
+    public(package) fun unstake_point<T, Action>(
+        dashboard: &mut PointDashBoard<T>,
+        req: UnstakePointRequest<T, Action>
+    ){
+        let UnstakePointRequest<T, Action>{
+            id,
+            owner,
+            weight,
+            timestamp,
+            duration
+        } = req;
+        object::delete(id);
+
+        let type_ = type_name::get<Action>();
+
+        init_user_info(dashboard, owner);
+
+        let info = &mut dashboard.user_infos[owner];
+        
+        // if user don't have corresponsing config, we skip updating the info
+
+        if(info.configs.contains(&type_)){
+            let config = &mut info.configs[&type_];
+            let acc_points = config.checkpoint(timestamp, weight, duration);
+
+            // update dashboard
+            dashboard.total_points = dashboard.total_points + acc_points;
+            // update personal information
             info.points = info.points + acc_points;
         }
     }
@@ -301,10 +339,11 @@ module liquidlink_protocol::point {
     public fun send_unstake_point_req<T: drop, Action>(
         weight: u256,   
         witness: T,
+        duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_unstake_point_req_<T, Action>(constant::point_updater(), ctx.sender(), weight, clock, ctx);
+        send_unstake_point_req_<T, Action>(constant::point_updater(), ctx.sender(), weight, duration, clock, ctx);
     }
     #[test_only]
     public fun send_unstake_point_req_with_assigned_updater<T: drop, Action>(
@@ -312,19 +351,21 @@ module liquidlink_protocol::point {
         updater: address,
         owner: address,
         weight: u256,   
+        duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_unstake_point_req_<T, Action>(updater, owner, weight, clock, ctx);
+        send_unstake_point_req_<T, Action>(updater, owner, weight, duration, clock, ctx);
     }
 
     public fun send_unstake_point_req_with_owner<T, Action>(
         owner: address,
         weight: u256,
+        duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_unstake_point_req_<T, Action>(constant::point_updater(), owner, weight, clock, ctx);
+        send_unstake_point_req_<T, Action>(constant::point_updater(), owner, weight, duration, clock, ctx);
     }
 
     // private function
@@ -409,6 +450,7 @@ module liquidlink_protocol::point {
         updater: address,
         owner: address,
         weight: u256,   
+        duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ){
@@ -417,6 +459,7 @@ module liquidlink_protocol::point {
             id: object::new(ctx),
             owner,
             weight,
+            duration,
             timestamp
         };
         event::emit(
@@ -429,10 +472,24 @@ module liquidlink_protocol::point {
         transfer::transfer(req, updater);
     }
 
+    fun checkpoint(
+        config: &mut Config,
+        timestamp: u64,
+        weight: u256,
+        duration: u64
+    ):u256{
+        let acc_points = calculate_action_points(config, timestamp);
+
+        config.weight = weight;
+        config.last_update = timestamp;
+        config.duration = duration;
+        
+        acc_points
+    }
+
     fun calculate_action_points(config: &Config, current_time: u64):u256{
-        if(config.duration == 0) return 0;
+        if(config.duration == 0 ) return 0;
         let frequency = ( current_time - config.last_update ) / config.duration;
         ( config.weight as u256 )  * ( frequency as u256 )
     }
-
 }

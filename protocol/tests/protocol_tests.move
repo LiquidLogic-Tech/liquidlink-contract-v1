@@ -9,7 +9,7 @@ module liquidlink_protocol::protocol_tests {
     use sui::math;
 
     use liquidlink_protocol::profile::{Self, ProfileRegistry, Profile, AdmincCap};
-    use liquidlink_protocol::point::{Self, AddPointRequest, SubPointRequest, StakePointRequest, PointDashBoard};
+    use liquidlink_protocol::point::{Self, AddPointRequest, SubPointRequest, StakePointRequest, UnstakePointRequest, PointDashBoard};
 
     fun people():(address, address, address){
         (@0xA, @0xB, @0xC)
@@ -68,6 +68,24 @@ module liquidlink_protocol::protocol_tests {
         ctx: &mut TxContext
     ){
         point::send_stake_point_req_with_assigned_updater<FAKE_OTW, Action>(
+            FAKE_OTW{},
+            UPDATER,
+            owner,
+            weight,
+            duration,
+            clock,
+            ctx
+        );
+    }
+
+    fun send_unstake_request<Action>(
+        owner: address,
+        weight: u256,   
+        duration: u64,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ){
+        point::send_unstake_point_req_with_assigned_updater<FAKE_OTW, Action>(
             FAKE_OTW{},
             UPDATER,
             owner,
@@ -256,7 +274,7 @@ module liquidlink_protocol::protocol_tests {
     }
 
     #[test]
-    public fun test_stake_point(){
+    public fun test_stake(){
         let (a, updater, _) = people();
         let (mut scenario, mut clock) = setup();
         let s = &mut scenario;
@@ -300,6 +318,106 @@ module liquidlink_protocol::protocol_tests {
             test::return_shared(dashboard);
         };
 
+        // past 6 day
+        clock.add_time(6 * 86400 * 1000);
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+
+            assert!(user_point == 7 * 1_000_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        // unstake half point
+        next_tx(s,a);{
+            let weight = 0_500_000_000; // 1 SU1
+            let duration = 86400 * 1000; // 1 day in ms
+            send_unstake_request<FAKE_BORROW>(a, weight, duration, &clock, ctx(s));
+        };
+
+        next_tx(s, a);{
+            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let cap = test::take_from_sender<AdmincCap>(s);
+            let req = test::take_from_sender<UnstakePointRequest<FAKE_OTW, FAKE_BORROW>>(s);
+
+            dashboard.unstake_point_by_admin(&cap, req);
+    
+            test::return_to_sender(s, cap);
+            test::return_shared(dashboard);
+        };
+
+        // past 1 day
+        clock.add_time(1 * 86400 * 1000);
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            assert!(user_point == 7 * 1_000_000_000 + 0_500_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        // past 6 days
+        clock.add_time(6 * 86400 * 1000);
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+
+            assert!(user_point == 7 * 1_000_000_000 + 7 * 0_500_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        // add point
+        next_tx(s,a);{
+            send_add_request(a, 0_500_000_000, ctx(s))
+        };
+
+        next_tx(s, a);{
+            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let cap = test::take_from_sender<AdmincCap>(s);
+
+            let req = test::take_from_sender<AddPointRequest<FAKE_OTW>>(s);
+            dashboard.add_point_by_admin(&cap, req);
+    
+            test::return_to_sender(s, cap);
+            test::return_shared(dashboard);
+        };
+
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            assert!(user_point == 11 * 1_000_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        // sub points
+        next_tx(s,a);{
+            send_sub_request(a, 6 * 1_000_000_000, ctx(s))
+        };
+
+        next_tx(s, a);{
+            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let cap = test::take_from_sender<AdmincCap>(s);
+            let req = test::take_from_sender<SubPointRequest<FAKE_OTW>>(s);
+
+            dashboard.sub_point_by_admin(&cap, req);
+    
+            test::return_to_sender(s, cap);
+            test::return_shared(dashboard);
+        };
+
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+
+            assert!(user_point == 5 * 1_000_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+        
 
         clock.destroy_for_testing();
         scenario.end();
