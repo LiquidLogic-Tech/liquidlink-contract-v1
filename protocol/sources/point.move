@@ -80,10 +80,25 @@ module liquidlink_protocol::point {
             option::none()
         }
     }
-    public fun get_user_iufo_points<T>(dashboard: &PointDashBoard<T>, user: address):u256{
+    public fun get_user_iufo_points<T>(
+        dashboard: &PointDashBoard<T>,
+        user: address,
+        clock: &Clock
+    ):u256{
         let info = get_user_info<T>(dashboard, user);
         if(info.is_some()){
-            info.borrow().points
+            let info_ = info.borrow();
+            let keys = info_.configs.keys();
+            let (mut i, len) = (0, keys.length());
+            
+            let mut total_points = info_.points;
+            while(i < len){
+                let accumulated_points = calculate_action_points(&info_.configs[&keys[i]], clock.timestamp_ms());
+                total_points = total_points + accumulated_points;
+                i = i + 1;
+            };
+
+            total_points
         }else{
             info.destroy_none();
             0
@@ -113,6 +128,7 @@ module liquidlink_protocol::point {
     // === Method Aliases ===
     public use fun liquidlink_protocol::profile::add_point_by_admin as PointDashBoard.add_point_by_admin;
     public use fun liquidlink_protocol::profile::sub_point_by_admin as PointDashBoard.sub_point_by_admin;
+    public use fun liquidlink_protocol::profile::stake_point_by_admin as PointDashBoard.stake_point_by_admin;
 
 
     //  Updater function
@@ -157,8 +173,7 @@ module liquidlink_protocol::point {
 
     public(package) fun stake_point<T, Action>(
         dashboard: &mut PointDashBoard<T>,
-        req: StakePointRequest<T, Action>,
-        clock: &Clock
+        req: StakePointRequest<T, Action>
     ){
         let StakePointRequest<T, Action>{
             id,
@@ -180,13 +195,13 @@ module liquidlink_protocol::point {
                 Config{
                     weight,
                     last_update: timestamp,
-                    duration: 0
+                    duration
                 }
             );
         }else{
             // checkpoint accumulated points
-            let config = info.configs[&type_];
-            let acc_points = config.weight * ((timestamp - config.last_update) as u256) / (config.duration as u256);
+            let config = &info.configs[&type_];
+            let acc_points = calculate_action_points(config, timestamp);
             
             dashboard.total_points = dashboard.total_points + acc_points;
             info.points = info.points + acc_points;
@@ -413,4 +428,11 @@ module liquidlink_protocol::point {
         );
         transfer::transfer(req, updater);
     }
+
+    fun calculate_action_points(config: &Config, current_time: u64):u256{
+        if(config.duration == 0) return 0;
+        let frequency = ( current_time - config.last_update ) / config.duration;
+        ( config.weight as u256 )  * ( frequency as u256 )
+    }
+
 }
