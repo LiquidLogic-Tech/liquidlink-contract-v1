@@ -18,6 +18,7 @@ module liquidlink_protocol::protocol_tests {
     public struct FAKE_OTW has drop {}
 
     public struct FAKE_BORROW {}
+    public struct FAKE_PSM {}
     
     public struct FakeProfileState has key, store{
         id: UID,
@@ -414,6 +415,86 @@ module liquidlink_protocol::protocol_tests {
             let user_point = dashboard.get_user_iufo_points(a, &clock);
 
             assert!(user_point == 5 * 1_000_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        
+        // add different action
+        next_tx(s,a);{
+            let weight = 10_000_000_000; // 10 SU1
+            let duration = 7 * 86400 * 1000; // 1 week
+            send_stake_request<FAKE_PSM>(a, weight, duration, &clock, ctx(s));
+        };
+
+        next_tx(s, a);{
+            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let cap = test::take_from_sender<AdmincCap>(s);
+            let req = test::take_from_sender<StakePointRequest<FAKE_OTW, FAKE_PSM>>(s);
+
+            dashboard.stake_point_by_admin(&cap, req);
+    
+            test::return_to_sender(s, cap);
+            test::return_shared(dashboard);
+        };
+
+        // past 1 day insufficient required time
+        clock.add_time( 100 * 1000);
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+
+            assert!(user_point == 5 * 1_000_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        clock.add_time( 86300 * 1000); // meet 1 day required duration, exclude points from PSM action as didn't meet minimum requirement
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+
+            assert!(user_point == 5_500_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        clock.add_time( 6 * 86400 * 1000); // meet 1 week duration
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+
+            assert!(user_point == 18_500_000_000, 404);
+
+            test::return_shared(dashboard);
+        };
+
+        // remove all weights
+        next_tx(s,a);{
+            let weight = 100_000_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
+            let duration = 86400 * 1000; // 1 day in ms
+            send_unstake_request<FAKE_BORROW>(a, weight, duration, &clock, ctx(s));
+            send_unstake_request<FAKE_PSM>(a, weight, duration, &clock, ctx(s));
+        };
+
+        next_tx(s, a);{
+            let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let cap = test::take_from_sender<AdmincCap>(s);
+            let req = test::take_from_sender<UnstakePointRequest<FAKE_OTW, FAKE_BORROW>>(s);
+            let req_ = test::take_from_sender<UnstakePointRequest<FAKE_OTW, FAKE_PSM>>(s);
+
+            dashboard.unstake_point_by_admin(&cap, req);
+            dashboard.unstake_point_by_admin(&cap, req_);
+    
+            test::return_to_sender(s, cap);
+            test::return_shared(dashboard);
+        };
+
+        next_tx(s,a);{
+            let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
+            let user_point = dashboard.get_user_iufo_points(a, &clock);
+
+            assert!(user_point == 18_500_000_000, 404);
 
             test::return_shared(dashboard);
         };

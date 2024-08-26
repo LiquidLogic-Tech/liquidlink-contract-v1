@@ -485,7 +485,6 @@ module liquidlink_protocol::point {
         }else{
             if(config.weight < weight) 0 else config.weight - weight
         };
-std::debug::print(&weight);
         config.weight = weight;
         config.last_update = timestamp;
         config.duration = duration;
