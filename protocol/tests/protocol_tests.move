@@ -60,8 +60,25 @@ module liquidlink_protocol::protocol_tests {
         );
     }
 
-    #[test]
-    fun test_protocol() {
+    fun send_stake_request<Action>(
+        owner: address,
+        weight: u256,   
+        duration: u64,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ){
+        point::send_stake_point_req_with_assigned_updater<FAKE_OTW, Action>(
+            FAKE_OTW{},
+            UPDATER,
+            owner,
+            weight,
+            duration,
+            clock,
+            ctx
+        );
+    }
+
+    fun setup():(Scenario, Clock){
         let (a, updater, _) = people();
 
         let mut scenario = test::begin(@0xA);
@@ -109,6 +126,15 @@ module liquidlink_protocol::protocol_tests {
             test::return_shared(reg);
             test::return_to_sender(s, cap);
         };
+
+        (scenario, clock)
+    }
+
+    #[test]
+    fun test_basic() {
+        let (a, updater, _) = people();
+        let (mut scenario, clock) = setup();
+        let s = &mut scenario;
 
         let point = 123;
         next_tx(s,a);{
@@ -224,6 +250,23 @@ module liquidlink_protocol::protocol_tests {
             test::return_shared(reg);
         };
 
+
+        clock.destroy_for_testing();
+        scenario.end();
+    }
+
+    #[test]
+    public fun test_stake_point(){
+        let (a, updater, _) = people();
+        let (mut scenario, clock) = setup();
+        let s = &mut scenario;
+
+        // stake point
+        next_tx(s,a);{
+            let weight = 1_000_000_000;
+            let duration = 86400;
+            send_stake_request<FAKE_BORROW>(a, weight, duration, &clock, ctx(s));
+        };
 
 
         clock.destroy_for_testing();
