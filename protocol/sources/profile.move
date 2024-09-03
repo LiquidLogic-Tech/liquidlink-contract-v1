@@ -2,12 +2,15 @@ module liquidlink_protocol::profile {
     // === Imports ===
     use std::ascii::{Self, String};
     use std::type_name::{Self, TypeName};
+    use std::string::utf8;
 
     use sui::vec_map::{Self, VecMap};
     use sui::vec_set::{Self, VecSet};
     use sui::table::{Self, Table};
     use sui::dynamic_field as df;
     use sui::dynamic_object_field as dof;
+    use sui::display;
+    use sui::package;
 
     use liquidlink_protocol::point::{Self, PointKey, AddPointRequest, SubPointRequest, StakePointRequest, UnstakePointRequest, PointDashBoard};
     use liquidlink_protocol::event;
@@ -21,6 +24,7 @@ module liquidlink_protocol::profile {
 
     // === Constants ===
     const VERSION: u64 = 1;
+    // display fields
     const NAME: vector<u8> = b"{name}";
     const IMAGE_URL: vector<u8> = b"https://liquidlink.io/api/profile/{id}/image";
     const DESCRIPTION: vector<u8> = b"{name}'s profile at LiquidLink. Check it out at https://liquidlink.io/{id}. Create your own at https://liquidlink.io";
@@ -160,7 +164,8 @@ module liquidlink_protocol::profile {
     }
 
     // === Admin Functions ===
-    fun init(owt: PROFILE, ctx: &mut TxContext){
+    fun init(otw: PROFILE, ctx: &mut TxContext){
+        let admin = ctx.sender();
         let reg = ProfileRegistry{
             id: object::new(ctx),
             version: VERSION,
@@ -169,7 +174,26 @@ module liquidlink_protocol::profile {
         transfer::share_object(reg);
 
         let cap = AdmincCap{ id: object::new(ctx) };
-        transfer::transfer(cap, ctx.sender());
+        transfer::transfer(cap, admin);
+
+        // display 
+        let keys = vector[
+            utf8(b"name"),
+            utf8(b"image_url"),
+            utf8(b"description"),
+        ];
+        let values = vector[
+            utf8(NAME),
+            utf8(IMAGE_URL),
+            utf8(DESCRIPTION),
+        ];
+        let publisher = package::claim(otw, ctx);
+        let mut display = display::new_with_fields<Profile>(
+            &publisher, keys, values, ctx
+        );
+        display::update_version(&mut display);
+        transfer::public_transfer(publisher, admin);
+        transfer::public_transfer(display, admin);
     }
 
     #[test_only]
@@ -286,6 +310,47 @@ module liquidlink_protocol::profile {
 
         event::profile_destroyed(owner, profile_id);
         object::delete(id);
+    }
+
+    public fun update_avatar_url(
+        self: &mut Profile,
+        url: String,
+    ){
+        self.avatar_url = url;
+    }
+
+    public fun update_name(
+        self: &mut Profile,
+        name: String,
+    ){
+        self.name = name;
+    }
+
+    public fun update_description(
+        self: &mut Profile,
+        description: String,
+    ){
+        self.description = description;
+    }
+
+    public fun update_metadata(
+        self: &mut Profile,
+        key: String,
+        value: String
+    ){
+        if(self.metadata.contains(&key)){
+            let prev_value = &mut self.metadata[&key];
+            *prev_value = value;
+        }else{
+            self.metadata.insert(key, value);
+        };
+    }
+
+    public fun remove_metadata(
+        self: &mut Profile,
+        key: String
+    ){
+        self.metadata.remove(&key);
     }
 
     public fun add_df_state<T, S: store>(
