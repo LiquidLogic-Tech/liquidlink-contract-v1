@@ -115,7 +115,7 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let mut reg = test::take_shared<ProfileRegistry>(s);
             
-            profile::register(&mut reg, avatar_url, name, description, ctx(s));
+            profile::register(&mut reg, avatar_url, name, description, &clock, ctx(s));
 
             test::return_shared(reg);
         };

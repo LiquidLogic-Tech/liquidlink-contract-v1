@@ -11,6 +11,7 @@ module liquidlink_protocol::profile {
     use sui::dynamic_object_field as dof;
     use sui::display;
     use sui::package;
+    use sui::clock::Clock;
 
     use liquidlink_protocol::point::{Self, PointKey, AddPointRequest, SubPointRequest, StakePointRequest, UnstakePointRequest, PointDashBoard};
     use liquidlink_protocol::event;
@@ -46,6 +47,7 @@ module liquidlink_protocol::profile {
     public struct Profile has key{
         id: UID,
         owner: address,
+        created_at: u64,
         avatar_url: String,
         name: String,
         description: String,
@@ -273,10 +275,11 @@ module liquidlink_protocol::profile {
         avatar_url: String,
         name: String,
         description: String,
+        clock: &Clock,
         ctx: &mut TxContext
     ){
         let owner = ctx.sender();
-        let profile = register_(reg, owner, avatar_url, name, description, ctx);
+        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, ctx);
 
         transfer::transfer(profile, owner);
     }
@@ -287,9 +290,10 @@ module liquidlink_protocol::profile {
         avatar_url: String,
         name: String,
         description: String,
+        clock: &Clock,
         ctx: &mut TxContext
     ){
-        let profile = register_(reg, owner, avatar_url, name, description, ctx);
+        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, ctx);
 
         transfer::transfer(profile, owner);
     }
@@ -300,6 +304,7 @@ module liquidlink_protocol::profile {
         let Profile {
             id,
             owner,
+            created_at: _,
             avatar_url: _,
             name: _,
             description: _,
@@ -396,29 +401,10 @@ module liquidlink_protocol::profile {
     }
 
     // === Private Functions ===
-    fun new (
-        reg: &mut ProfileRegistry,
-        owner: address,
-        avatar_url: String,
-        name: String,
-        description: String,
-        ctx: &mut TxContext
-    ): Profile {
-        let profile = Profile{
-            id: object::new(ctx),
-            owner,
-            avatar_url,
-            name,
-            description,
-            metadata: vec_map::empty()
-        };
-        
-        event::profile_created(owner, object::id(&profile));
-        profile
-    }
     fun register_(
         reg: &mut ProfileRegistry,
         owner: address,
+        created_at: u64,
         avatar_url: String,
         name: String,
         description: String,
@@ -427,6 +413,7 @@ module liquidlink_protocol::profile {
         let profile = Profile{
             id: object::new(ctx),
             owner,
+            created_at,
             avatar_url,
             name,
             description,
@@ -459,7 +446,7 @@ module liquidlink_protocol::profile {
             registry: table::new(ctx)
         };
         let mut profile_key = point::new_point_key<PROFILE>();
-        let mut profile = register_(&mut registry, @0xA, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
+        let mut profile = register_(&mut registry, @0xA, 1000, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
         profile.add_df_state(
             &mut profile_key,
             DFState{}
