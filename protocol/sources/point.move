@@ -5,6 +5,7 @@ module liquidlink_protocol::point {
     use sui::clock::Clock;
     use sui::table::{Self, Table};
     use sui::vec_map::{Self, VecMap};
+    use sui::object;
 
     use liquidlink_protocol::constant;
 
@@ -109,20 +110,24 @@ module liquidlink_protocol::point {
     // === event ===
     public struct LiquidlinkAddPointEvent<phantom T> has copy, drop{
         owner: address,
-        value: u256
+        req: ID,
+        value: u256,
     }
     public struct LiquidlinkSubPointEvent<phantom T> has copy, drop{
         owner: address,
-        value: u256
+        req: ID,
+        value: u256,
     }
     public struct LiquidlinkStakePointEvent<phantom T, phantom Action> has copy, drop{
         owner: address,
+        req: ID,
         weight: u256,
         timestamp: u64,
-        duration: u64
+        duration: u64,
     }
     public struct LiquidlinkUnstakePointEvent<phantom T, phantom Action> has copy, drop{
         owner: address,
+        req: ID,
         weight: u256,
         timestamp: u64,
         duration: u64
@@ -392,6 +397,7 @@ module liquidlink_protocol::point {
         event::emit(
             LiquidlinkAddPointEvent<T>{
                 owner,
+                req: object::id(&point),
                 value
             }
         );
@@ -412,6 +418,7 @@ module liquidlink_protocol::point {
         event::emit(
             LiquidlinkSubPointEvent<T>{
                 owner,
+                req: object::id(&point),
                 value
             }
         );
@@ -437,6 +444,7 @@ module liquidlink_protocol::point {
         event::emit(
             LiquidlinkStakePointEvent<T, Action>{
                 owner,
+                req: object::id(&req),
                 weight,
                 timestamp,
                 duration
@@ -464,6 +472,7 @@ module liquidlink_protocol::point {
         event::emit(
             LiquidlinkUnstakePointEvent<T, Action>{
                 owner,
+                req: object::id(&req),
                 weight,
                 timestamp,
                 duration
