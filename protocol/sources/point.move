@@ -281,6 +281,7 @@ module liquidlink_protocol::point {
     /// ex: if we have requests with (+1, -3, +2), on-chain: +2; off-chain: 0
     public fun send_sub_point_req<T>(
         value: u256,   
+        witness: T,
         ctx: &mut TxContext
     ){
         send_sub_point_req_<T>(constant::point_updater(), ctx.sender(), value, ctx);
