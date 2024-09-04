@@ -9,10 +9,6 @@ module liquidlink_protocol::point {
 
     use liquidlink_protocol::constant;
 
-    // === witness ===
-    public struct Bucket has drop {}
-    public struct Strater has drop {}
-
     // === struct ===
 
     /// PointKey to access Profile's Point instance
@@ -256,6 +252,7 @@ module liquidlink_protocol::point {
     // ===== Add Point =====
     public fun send_add_point_req<T: drop>(
         value: u256,   
+        witness: T,
         ctx: &mut TxContext
     ){
         send_add_point_req_<T>(constant::point_updater(), ctx.sender(), value, ctx);
@@ -311,6 +308,7 @@ module liquidlink_protocol::point {
     // ===== Stake Point =====
     public fun send_stake_point_req<T: drop, Action>(
         weight: u256,   
+        witness: T,
         duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
@@ -343,6 +341,7 @@ module liquidlink_protocol::point {
     // ===== Unstake Point =====
     public fun send_unstake_point_req<T: drop, Action>(
         weight: u256,   
+        witness: T,
         duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
