@@ -237,7 +237,7 @@ module liquidlink_protocol::profile {
         transfer::public_share_object(dashboard);
     }
 
-    public fun add_point_by_admin<T>(
+    public fun add_point_by_admin<T: drop>(
         dashboard: &mut PointDashBoard<T>,
         _: &AdmincCap,
         req: AddPointRequest<T>
@@ -253,7 +253,7 @@ module liquidlink_protocol::profile {
         point::sub_point(dashboard, req);
     }
 
-    public fun stake_point_by_admin<T, Action>(
+    public fun stake_point_by_admin<T: drop, Action>(
         dashboard: &mut PointDashBoard<T>,
         _: &AdmincCap,
         req: StakePointRequest<T, Action>
@@ -261,7 +261,7 @@ module liquidlink_protocol::profile {
         point::stake_point<T, Action>(dashboard, req);
     }
 
-    public fun unstake_point_by_admin<T, Action>(
+    public fun unstake_point_by_admin<T: drop, Action>(
         dashboard: &mut PointDashBoard<T>,
         _: &AdmincCap,
         req: UnstakePointRequest<T, Action>

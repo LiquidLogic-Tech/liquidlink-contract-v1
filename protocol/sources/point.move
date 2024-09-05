@@ -140,7 +140,7 @@ module liquidlink_protocol::point {
     public use fun liquidlink_protocol::profile::unstake_point_by_admin as PointDashBoard.unstake_point_by_admin;
 
     //  Updater function
-    public(package) fun add_point<T>(
+    public(package) fun add_point<T: drop>(
         dashboard: &mut PointDashBoard<T>,
         req: AddPointRequest<T>
     ){
@@ -179,7 +179,7 @@ module liquidlink_protocol::point {
         };
     }
 
-    public(package) fun stake_point<T, Action>(
+    public(package) fun stake_point<T: drop, Action>(
         dashboard: &mut PointDashBoard<T>,
         req: StakePointRequest<T, Action>
     ){
@@ -217,7 +217,7 @@ module liquidlink_protocol::point {
         }
     }
 
-    public(package) fun unstake_point<T, Action>(
+    public(package) fun unstake_point<T: drop, Action>(
         dashboard: &mut PointDashBoard<T>,
         req: UnstakePointRequest<T, Action>
     ){
@@ -251,8 +251,8 @@ module liquidlink_protocol::point {
 
     // ===== Add Point =====
     public fun send_add_point_req<T: drop>(
-        value: u256,   
         witness: T,
+        value: u256,   
         ctx: &mut TxContext
     ){
         send_add_point_req_<T>(constant::point_updater(), ctx.sender(), value, ctx);
@@ -268,7 +268,8 @@ module liquidlink_protocol::point {
         send_add_point_req_<T>(updater, owner, value, ctx);
     }
 
-    public fun send_add_point_req_with_owner<T>(
+    public fun send_add_point_req_with_owner<T: drop>(
+        witness: T,
         owner: address,
         value: u256,
         ctx: &mut TxContext
@@ -279,9 +280,9 @@ module liquidlink_protocol::point {
     // ===== Sub Point =====
     /// Use the function carefully as it's possible on-chain point zero out while off-chain calculation ends up in positive
     /// ex: if we have requests with (+1, -3, +2), on-chain: +2; off-chain: 0
-    public fun send_sub_point_req<T>(
-        value: u256,   
+    public fun send_sub_point_req<T: drop>(
         witness: T,
+        value: u256,   
         ctx: &mut TxContext
     ){
         send_sub_point_req_<T>(constant::point_updater(), ctx.sender(), value, ctx);
@@ -298,7 +299,8 @@ module liquidlink_protocol::point {
         send_sub_point_req_<T>(updater, owner, value, ctx);
     }
 
-    public fun send_sub_point_req_with_owner<T>(
+    public fun send_sub_point_req_with_owner<T: drop>(
+        witness: T,
         owner: address,
         value: u256,
         ctx: &mut TxContext
@@ -308,8 +310,8 @@ module liquidlink_protocol::point {
 
     // ===== Stake Point =====
     public fun send_stake_point_req<T: drop, Action>(
-        weight: u256,   
         witness: T,
+        weight: u256,   
         duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
@@ -329,7 +331,8 @@ module liquidlink_protocol::point {
         send_stake_point_req_<T, Action>(updater, owner, weight, duration, clock, ctx);
     }
 
-    public fun send_stake_point_req_with_owner<T, Action>(
+    public fun send_stake_point_req_with_owner<T: drop, Action>(
+        witness: T,
         owner: address,
         weight: u256,
         duration: u64,
@@ -341,8 +344,8 @@ module liquidlink_protocol::point {
 
     // ===== Unstake Point =====
     public fun send_unstake_point_req<T: drop, Action>(
-        weight: u256,   
         witness: T,
+        weight: u256,   
         duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
@@ -362,7 +365,8 @@ module liquidlink_protocol::point {
         send_unstake_point_req_<T, Action>(updater, owner, weight, duration, clock, ctx);
     }
 
-    public fun send_unstake_point_req_with_owner<T, Action>(
+    public fun send_unstake_point_req_with_owner<T: drop, Action>(
+        witness: T,
         owner: address,
         weight: u256,
         duration: u64,
@@ -373,7 +377,7 @@ module liquidlink_protocol::point {
     }
 
     // private function
-    fun init_user_info<T>(dashboard: &mut PointDashBoard<T>, owner: address){
+    fun init_user_info<T: drop>(dashboard: &mut PointDashBoard<T>, owner: address){
         if(!dashboard.user_infos.contains(owner)){
             dashboard.user_infos.add(
                 owner, 
@@ -384,7 +388,7 @@ module liquidlink_protocol::point {
             );
         };
     }
-    fun send_add_point_req_<T>(
+    fun send_add_point_req_<T: drop>(
         updater: address,
         owner: address,
         value: u256,   
@@ -405,7 +409,7 @@ module liquidlink_protocol::point {
         transfer::transfer(point, updater);
     }
 
-    fun send_sub_point_req_<T>(
+    fun send_sub_point_req_<T: drop>(
         updater: address,
         owner: address,
         value: u256,   
@@ -426,7 +430,7 @@ module liquidlink_protocol::point {
         transfer::transfer(point, updater);
     }
 
-    fun send_stake_point_req_<T, Action>(
+    fun send_stake_point_req_<T: drop, Action>(
         updater: address,
         owner: address,
         weight: u256,   
@@ -454,7 +458,7 @@ module liquidlink_protocol::point {
         transfer::transfer(req, updater);
     }
 
-    fun send_unstake_point_req_<T, Action>(
+    fun send_unstake_point_req_<T: drop, Action>(
         updater: address,
         owner: address,
         weight: u256,
