@@ -114,8 +114,8 @@ module liquidlink_protocol::protocol_tests {
         // register
         next_tx(s,a);{
             let mut reg = test::take_shared<ProfileRegistry>(s);
-            
-            profile::register(&mut reg, avatar_url, name, description, &clock, ctx(s));
+        
+            profile::register(&mut reg, avatar_url, name, description, vector[string(b"meta_link")], vector[string(b"bar")], &clock, ctx(s));
 
             test::return_shared(reg);
         };
@@ -127,7 +127,7 @@ module liquidlink_protocol::protocol_tests {
             assert!(profile.avatar_url() == avatar_url, 404);
             assert!(profile.name() == name, 404);
             assert!(profile.description() == description, 404);
-            assert!(profile.metadata() == sui::vec_map::empty<String, String>(), 404);
+            assert!(profile.metadata() == sui::vec_map::from_keys_values<String, String>(vector[string(b"meta_link")], vector[string(b"bar")]), 404);
             assert!(reg.profile_of(a) == object::id(&profile), 404);
 
             test::return_shared(reg);
@@ -420,7 +420,7 @@ module liquidlink_protocol::protocol_tests {
         };
 
         
-        // add different action
+        // stake action
         next_tx(s,a);{
             let weight = 10_000_000_000; // 10 SU1
             let duration = 7 * 86400 * 1000; // 1 week
@@ -438,28 +438,44 @@ module liquidlink_protocol::protocol_tests {
             test::return_shared(dashboard);
         };
 
-        // past 1 day insufficient required time
-        clock.add_time( 100 * 1000);
+        // past 100 seconds
+        clock.add_time(100 * 1000);
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let user_point = dashboard.get_user_iufo_points(a, &clock);
 
-            assert!(user_point == 5 * 1_000_000_000, 404);
+            let elapsed = 100 * 1000;
+            let mut weight = 0_500_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
+            let mut duration = 86400 * 1000; // 1 day in ms
+            let expected_added_points_from_borrow = weight * elapsed / duration;
+
+            weight = 10_000_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
+            duration = 7 * 86400 * 1000; // 1 day in ms
+            let expected_added_points_from_psm = weight * elapsed / duration;
+            assert!(user_point == 5_000_000_000 + expected_added_points_from_borrow + expected_added_points_from_psm, 404);
 
             test::return_shared(dashboard);
         };
 
-        clock.add_time( 86300 * 1000); // meet 1 day required duration, exclude points from PSM action as didn't meet minimum requirement
+        clock.add_time(86300 * 1000); // meet 1 day required duration, exclude points from PSM action as didn't meet minimum requirement
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let user_point = dashboard.get_user_iufo_points(a, &clock);
 
-            assert!(user_point == 5_500_000_000, 404);
+            let elapsed = (86300 + 100) * 1000;
+            let mut weight = 0_500_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
+            let mut duration = 86400 * 1000; // 1 day in ms
+            let expected_added_points_from_borrow = weight * elapsed / duration;
+
+            weight = 10_000_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
+            duration = 7 * 86400 * 1000; // 1 day in ms
+            let expected_added_points_from_psm = weight * elapsed / duration;
+            assert!(user_point == 5_000_000_000 + expected_added_points_from_borrow + expected_added_points_from_psm, 404);
 
             test::return_shared(dashboard);
         };
 
-        clock.add_time( 6 * 86400 * 1000); // meet 1 week duration
+        clock.add_time(6 * 86400 * 1000); // meet 1 week duration
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let user_point = dashboard.get_user_iufo_points(a, &clock);

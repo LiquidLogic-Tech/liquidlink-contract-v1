@@ -227,7 +227,7 @@ module liquidlink_protocol::profile {
         point::drop_point_key(profile_key);
     }
 
-    public fun new_point_dashboard<T: drop>(
+    entry public fun new_point_dashboard<T: drop>(
         cap: &AdmincCap,
         reg: &mut ProfileRegistry,
         ctx: &mut TxContext
@@ -275,11 +275,14 @@ module liquidlink_protocol::profile {
         avatar_url: String,
         name: String,
         description: String,
+        metadata_keys: vector<String>,
+        metadata_values: vector<String>,
         clock: &Clock,
         ctx: &mut TxContext
     ){
         let owner = ctx.sender();
-        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, ctx);
+        let metadata = vec_map::from_keys_values(metadata_keys, metadata_values);
+        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, metadata, ctx);
 
         transfer::transfer(profile, owner);
     }
@@ -290,10 +293,13 @@ module liquidlink_protocol::profile {
         avatar_url: String,
         name: String,
         description: String,
+        metadata_keys: vector<String>,
+        metadata_values: vector<String>,
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, ctx);
+        let metadata = vec_map::from_keys_values(metadata_keys, metadata_values);
+        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, metadata, ctx);
 
         transfer::transfer(profile, owner);
     }
@@ -408,6 +414,7 @@ module liquidlink_protocol::profile {
         avatar_url: String,
         name: String,
         description: String,
+        metadata: VecMap<String, String>,
         ctx: &mut TxContext
     ):Profile{
         let profile = Profile{
@@ -417,7 +424,7 @@ module liquidlink_protocol::profile {
             avatar_url,
             name,
             description,
-            metadata: vec_map::empty()
+            metadata
         };
         let profile_id = object::id(&profile);
         event::profile_created(owner, profile_id);
@@ -446,7 +453,7 @@ module liquidlink_protocol::profile {
             registry: table::new(ctx)
         };
         let mut profile_key = point::new_point_key<PROFILE>();
-        let mut profile = register_(&mut registry, @0xA, 1000, ascii::string(b""), ascii::string(b""), ascii::string(b""), ctx);
+        let mut profile = register_(&mut registry, @0xA, 1000, ascii::string(b""), ascii::string(b""), ascii::string(b""), vec_map::empty(), ctx);
         profile.add_df_state(
             &mut profile_key,
             DFState{}

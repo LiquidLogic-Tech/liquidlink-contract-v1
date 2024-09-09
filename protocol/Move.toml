@@ -1,7 +1,12 @@
 [package]
 name = "LiquidlinkProtocol"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-published-at = "0x3dcd3cbc5ee046e3392b38f8c28da662a5ca4ea807b8a297d891fca8e4bf1f23"
+# published-at = "0x3dcd3cbc5ee046e3392b38f8c28da662a5ca4ea807b8a297d891fca8e4bf1f23"
+# published-at = "0xd70eb3717b55d448d28d33a4f48d5c6a20a6fe75e44bfa509dc1fddbae3d50a2"
+# published-at = "0x541c80f52e889aac8fc5288fe76e2d4820bd6344979335dd952c98e66df3529a"
+# published-at = "0x935c91a971e8dec62fd1da5054da25c8a65ecad8e829a11b7884b67cd4d03568"
+# published-at = "0x7f09305c574b99e9fa86f70242753d55f9ec519c2c7135825b70443460b58e3b"
+published-at = '0xec87913bc55d735ca9d1076412c13f2a3fa84ef5db1a29a61b48d5f40d76af1b'
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 

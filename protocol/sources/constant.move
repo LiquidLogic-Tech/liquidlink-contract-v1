@@ -1,6 +1,6 @@
 module liquidlink_protocol::constant {
     
-    const POINT_UPDATER: address = @0x2ca9e149e1a1b403d6636568ebd9e62f681a1037d7510164df77aebe7b9cf4a7;
+    const POINT_UPDATER: address = @0x199ca42b8c437bd4e1a440e0d15667bfc27291725680bb7a51bc4248165f8603;
 
     public fun point_updater():address{
         POINT_UPDATER

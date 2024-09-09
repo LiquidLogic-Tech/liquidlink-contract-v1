@@ -508,7 +508,7 @@ module liquidlink_protocol::point {
 
     fun calculate_action_points(config: &Config, current_time: u64):u256{
         if(config.duration == 0 ) return 0;
-        let frequency = ( current_time - config.last_update ) / config.duration;
-        ( config.weight as u256 )  * ( frequency as u256 )
+        let elapsed = (( current_time - config.last_update ) as u256);
+        ( config.weight as u256 ) * elapsed / ( config.duration as u256 )
     }
 }
