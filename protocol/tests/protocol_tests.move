@@ -1,4 +1,5 @@
 #[test_only]
+#[allow(unused)]
 module liquidlink_protocol::protocol_tests {
     use std::ascii::{Self, string, String};
 
@@ -17,9 +18,6 @@ module liquidlink_protocol::protocol_tests {
 
     public struct FAKE_OTW has drop {}
 
-    public struct FAKE_BORROW {}
-    public struct FAKE_PSM {}
-    
     public struct FakeProfileState has key, store{
         id: UID,
         value: u64
@@ -43,6 +41,7 @@ module liquidlink_protocol::protocol_tests {
             FAKE_OTW{},
             UPDATER,
             owner,
+            string(b"basis"),
             value,
             ctx
         );
@@ -56,22 +55,25 @@ module liquidlink_protocol::protocol_tests {
             FAKE_OTW{},
             UPDATER,
             owner,
+            string(b"basis"),
             value,
             ctx
         );
     }
 
-    fun send_stake_request<Action>(
+    fun send_stake_request(
         owner: address,
+        action: String,
         weight: u256,   
         duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        point::send_stake_point_req_with_assigned_updater<FAKE_OTW, Action>(
+        point::send_stake_point_req_with_assigned_updater<FAKE_OTW>(
             FAKE_OTW{},
             UPDATER,
             owner,
+            action,
             weight,
             duration,
             clock,
@@ -79,17 +81,19 @@ module liquidlink_protocol::protocol_tests {
         );
     }
 
-    fun send_unstake_request<Action>(
+    fun send_unstake_request(
         owner: address,
+        action: String,
         weight: u256,   
         duration: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        point::send_unstake_point_req_with_assigned_updater<FAKE_OTW, Action>(
+        point::send_unstake_point_req_with_assigned_updater<FAKE_OTW>(
             FAKE_OTW{},
             UPDATER,
             owner,
+            action,
             weight,
             duration,
             clock,
@@ -139,7 +143,7 @@ module liquidlink_protocol::protocol_tests {
             let mut reg = test::take_shared<ProfileRegistry>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
         
-            profile::register_point_module<FAKE_OTW>(&cap, &mut reg, ctx(s));
+            profile::register_point_module<FAKE_OTW>(&cap, &mut reg);
             profile::new_point_dashboard<FAKE_OTW>(&cap, &mut reg, ctx(s));
 
             test::return_shared(reg);
@@ -190,7 +194,6 @@ module liquidlink_protocol::protocol_tests {
             let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
             let req = test::take_from_sender<SubPointRequest<FAKE_OTW>>(s);
-
             dashboard.sub_point_by_admin(&cap, req);
     
             test::return_to_sender(s, cap);
@@ -284,13 +287,13 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let weight = 1_000_000_000; // 1 SU1
             let duration = 86400 * 1000; // 1 day in ms
-            send_stake_request<FAKE_BORROW>(a, weight, duration, &clock, ctx(s));
+            send_stake_request(a, string(b"borrow"), weight, duration, &clock, ctx(s));
         };
 
         next_tx(s, a);{
             let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
-            let req = test::take_from_sender<StakePointRequest<FAKE_OTW, FAKE_BORROW>>(s);
+            let req = test::take_from_sender<StakePointRequest<FAKE_OTW>>(s);
 
             dashboard.stake_point_by_admin(&cap, req);
     
@@ -334,13 +337,13 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let weight = 0_500_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
             let duration = 86400 * 1000; // 1 day in ms
-            send_unstake_request<FAKE_BORROW>(a, weight, duration, &clock, ctx(s));
+            send_unstake_request(a, string(b"borrow"), weight, duration, &clock, ctx(s));
         };
 
         next_tx(s, a);{
             let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
-            let req = test::take_from_sender<UnstakePointRequest<FAKE_OTW, FAKE_BORROW>>(s);
+            let req = test::take_from_sender<UnstakePointRequest<FAKE_OTW>>(s);
 
             dashboard.unstake_point_by_admin(&cap, req);
     
@@ -396,6 +399,7 @@ module liquidlink_protocol::protocol_tests {
 
         // sub points
         next_tx(s,a);{
+            // for "basis" action, we can only deducte remaining 0_500_000_000 from 1_000_000_000
             send_sub_request(a, 6 * 1_000_000_000, ctx(s))
         };
 
@@ -413,8 +417,7 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let user_point = dashboard.get_user_iufo_points(a, &clock);
-
-            assert!(user_point == 5 * 1_000_000_000, 404);
+            assert!(user_point == 10_500_000_000, 404);
 
             test::return_shared(dashboard);
         };
@@ -424,13 +427,13 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let weight = 10_000_000_000; // 10 SU1
             let duration = 7 * 86400 * 1000; // 1 week
-            send_stake_request<FAKE_PSM>(a, weight, duration, &clock, ctx(s));
+            send_stake_request(a, string(b"psm"), weight, duration, &clock, ctx(s));
         };
 
         next_tx(s, a);{
             let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
-            let req = test::take_from_sender<StakePointRequest<FAKE_OTW, FAKE_PSM>>(s);
+            let req = test::take_from_sender<StakePointRequest<FAKE_OTW>>(s);
 
             dashboard.stake_point_by_admin(&cap, req);
     
@@ -452,7 +455,7 @@ module liquidlink_protocol::protocol_tests {
             weight = 10_000_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
             duration = 7 * 86400 * 1000; // 1 day in ms
             let expected_added_points_from_psm = weight * elapsed / duration;
-            assert!(user_point == 5_000_000_000 + expected_added_points_from_borrow + expected_added_points_from_psm, 404);
+            assert!(user_point == 10_500_000_000 + expected_added_points_from_borrow + expected_added_points_from_psm, 404);
 
             test::return_shared(dashboard);
         };
@@ -470,7 +473,7 @@ module liquidlink_protocol::protocol_tests {
             weight = 10_000_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
             duration = 7 * 86400 * 1000; // 1 day in ms
             let expected_added_points_from_psm = weight * elapsed / duration;
-            assert!(user_point == 5_000_000_000 + expected_added_points_from_borrow + expected_added_points_from_psm, 404);
+            assert!(user_point == 10_500_000_000 + expected_added_points_from_borrow + expected_added_points_from_psm, 404);
 
             test::return_shared(dashboard);
         };
@@ -480,7 +483,7 @@ module liquidlink_protocol::protocol_tests {
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let user_point = dashboard.get_user_iufo_points(a, &clock);
 
-            assert!(user_point == 18_500_000_000, 404);
+            assert!(user_point == 24_000_000_000, 404);
 
             test::return_shared(dashboard);
         };
@@ -489,15 +492,15 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let weight = 100_000_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
             let duration = 86400 * 1000; // 1 day in ms
-            send_unstake_request<FAKE_BORROW>(a, weight, duration, &clock, ctx(s));
-            send_unstake_request<FAKE_PSM>(a, weight, duration, &clock, ctx(s));
+            send_unstake_request(a, string(b"borrow"), weight, duration, &clock, ctx(s));
+            send_unstake_request(a, string(b"psm"), weight, duration, &clock, ctx(s));
         };
 
         next_tx(s, a);{
             let mut dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let cap = test::take_from_sender<AdmincCap>(s);
-            let req = test::take_from_sender<UnstakePointRequest<FAKE_OTW, FAKE_BORROW>>(s);
-            let req_ = test::take_from_sender<UnstakePointRequest<FAKE_OTW, FAKE_PSM>>(s);
+            let req = test::take_from_sender<UnstakePointRequest<FAKE_OTW>>(s);
+            let req_ = test::take_from_sender<UnstakePointRequest<FAKE_OTW>>(s);
 
             dashboard.unstake_point_by_admin(&cap, req);
             dashboard.unstake_point_by_admin(&cap, req_);
@@ -510,7 +513,7 @@ module liquidlink_protocol::protocol_tests {
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
             let user_point = dashboard.get_user_iufo_points(a, &clock);
 
-            assert!(user_point == 18_500_000_000, 404);
+            assert!(user_point == 24_000_000_000, 404);
 
             test::return_shared(dashboard);
         };
