@@ -223,6 +223,7 @@ module liquidlink_protocol::profile {
         point::drop_point_key(profile_key);
     }
 
+    #[allow(lint(share_owned))]
     entry public fun new_point_dashboard<T: drop>(
         cap: &AdmincCap,
         reg: &mut ProfileRegistry,

@@ -1,5 +1,5 @@
 #[test_only]
-#[allow(unused)]
+#[allow(unused, lint(collection_equality))]
 module liquidlink_protocol::protocol_tests {
     use std::ascii::{Self, string, String};
 
