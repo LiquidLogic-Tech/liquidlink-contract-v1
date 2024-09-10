@@ -192,6 +192,8 @@ module liquidlink_protocol::point {
         } = req;
         object::delete(id);
 
+        init_user_info(dashboard, owner);
+
         let user_info = &mut dashboard.user_infos[owner];
         if(user_info.points.contains(&action)){
             let prev_user_point = *&user_info.points[&action];

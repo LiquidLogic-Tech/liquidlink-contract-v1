@@ -20,7 +20,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-liquidlink_protocol = "0x00"
+liquidlink_protocol = "0xed8e8894181fbcda554bea8adb062b9f9b8556f78e8e10dbd21cda6ca8b7a86b"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
