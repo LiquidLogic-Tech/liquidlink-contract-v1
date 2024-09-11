@@ -180,7 +180,7 @@ module liquidlink_protocol::point {
         dashboard.total_points = dashboard.total_points + value;
     }
 
-    public(package) fun sub_point<T>(
+    public(package) fun sub_point<T: drop>(
         dashboard: &mut PointDashBoard<T>,
         req: SubPointRequest<T>
     ){

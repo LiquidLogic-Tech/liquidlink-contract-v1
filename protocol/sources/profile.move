@@ -242,7 +242,7 @@ module liquidlink_protocol::profile {
         point::add_point(dashboard, req);
     }
 
-    public fun sub_point_by_admin<T>(
+    public fun sub_point_by_admin<T: drop>(
         dashboard: &mut PointDashBoard<T>,
         _: &AdmincCap,
         req: SubPointRequest<T>
