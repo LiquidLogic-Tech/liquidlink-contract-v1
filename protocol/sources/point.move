@@ -556,6 +556,7 @@ module liquidlink_protocol::point {
     ):u256{
         assert!(timestamp > config.last_update, ERR_OBSOLETE_REQUEST);
         let acc_points = calculate_config_points(config, timestamp);
+        // TODO: make input weight absolute value rather than difference
         let weight = if(stake){
             config.weight + weight
         }else{
