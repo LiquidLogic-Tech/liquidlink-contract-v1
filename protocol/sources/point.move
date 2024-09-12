@@ -67,7 +67,6 @@ module liquidlink_protocol::point {
         id: UID,
         total_points: u256,
         user_infos: Table<address, UserInfo>,
-        // todo: add config history
     }
     public(package) fun new_point_dashboard<T>(ctx: &mut TxContext):PointDashBoard<T>{
         PointDashBoard<T>{
@@ -556,12 +555,7 @@ module liquidlink_protocol::point {
     ):u256{
         assert!(timestamp > config.last_update, ERR_OBSOLETE_REQUEST);
         let acc_points = calculate_config_points(config, timestamp);
-        // TODO: make input weight absolute value rather than difference
-        let weight = if(stake){
-            config.weight + weight
-        }else{
-            if(config.weight < weight) 0 else config.weight - weight
-        };
+
         config.weight = weight;
         config.last_update = timestamp;
         config.duration = duration;
