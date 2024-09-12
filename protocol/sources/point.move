@@ -113,8 +113,24 @@ module liquidlink_protocol::point {
             };
         };
 
-
         points
+    }
+
+    public fun get_user_info_point_by_action<T>(
+        dashboard: &PointDashBoard<T>,
+        user: address,
+        action: String,
+        clock: &Clock
+    ):u256{
+        if(!dashboard.user_infos.contains(user)){
+            0
+        }else{
+            let user_info = dashboard.user_infos[user];
+            let points = if(user_info.points.contains(&action)) user_info.points[&action] else 0;
+            let staking_points = if(user_info.configs.contains(&action)) calculate_config_points(&user_info.configs[&action], clock.timestamp_ms()) else 0;
+
+            points + staking_points
+        }
     }
 
     // === event ===
