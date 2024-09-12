@@ -38,7 +38,7 @@ module liquidlink_protocol::protocol_tests {
         ctx: &mut TxContext
     ){
         point::send_add_point_req_with_assigned_updater<FAKE_OTW>(
-            FAKE_OTW{},
+            &FAKE_OTW{},
             UPDATER,
             owner,
             string(b"basis"),
@@ -52,7 +52,7 @@ module liquidlink_protocol::protocol_tests {
         ctx: &mut TxContext
     ){
         point::send_sub_point_req_with_assigned_updater<FAKE_OTW>(
-            FAKE_OTW{},
+            &FAKE_OTW{},
             UPDATER,
             owner,
             string(b"basis"),
@@ -70,7 +70,7 @@ module liquidlink_protocol::protocol_tests {
         ctx: &mut TxContext
     ){
         point::send_stake_point_req_with_assigned_updater<FAKE_OTW>(
-            FAKE_OTW{},
+            &FAKE_OTW{},
             UPDATER,
             owner,
             action,
@@ -90,7 +90,7 @@ module liquidlink_protocol::protocol_tests {
         ctx: &mut TxContext
     ){
         point::send_unstake_point_req_with_assigned_updater<FAKE_OTW>(
-            FAKE_OTW{},
+            &FAKE_OTW{},
             UPDATER,
             owner,
             action,
@@ -213,7 +213,7 @@ module liquidlink_protocol::protocol_tests {
         // insert the state into profile slot 
         next_tx(s,a);{
             let mut reg = test::take_shared<ProfileRegistry>(s);
-            let point_key_mut = profile::point_key_mut<FAKE_OTW>(&mut reg, FAKE_OTW{});
+            let point_key_mut = profile::point_key_mut<FAKE_OTW>(&mut reg, &mut FAKE_OTW{});
             let mut profile = test::take_from_sender<Profile>(s);
             // update both df & dof state
             profile.add_df_state<FAKE_OTW,FakeProfileState>(point_key_mut, FakeProfileState{
@@ -249,7 +249,7 @@ module liquidlink_protocol::protocol_tests {
         // remove the state
         next_tx(s,a);{
             let mut reg = test::take_shared<ProfileRegistry>(s);
-            let point_key_mut = profile::point_key_mut<FAKE_OTW>(&mut reg, FAKE_OTW{});
+            let point_key_mut = profile::point_key_mut<FAKE_OTW>(&mut reg, &mut FAKE_OTW{});
             let mut profile = test::take_from_sender<Profile>(s);
             // update both df & dof state
             let df_state = profile.remove_df_state<FAKE_OTW,FakeProfileState>(point_key_mut);

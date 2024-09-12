@@ -288,7 +288,7 @@ module liquidlink_protocol::point {
 
     // ===== Add Point =====
     public fun send_add_point_req<T: drop>(
-        _witness: T,
+        _witness: &T,
         action: String,
         value: u256,   
         ctx: &mut TxContext
@@ -297,7 +297,7 @@ module liquidlink_protocol::point {
     }
     #[test_only]
     public fun send_add_point_req_with_assigned_updater<T: drop>(
-        _witness: T,
+        _witness: &T,
         updater: address,
         owner: address,
         action: String,
@@ -308,7 +308,7 @@ module liquidlink_protocol::point {
     }
 
     public fun send_add_point_req_with_owner<T: drop>(
-        _witness: T,
+        _witness: &T,
         owner: address,
         action: String,
         value: u256,
@@ -321,7 +321,7 @@ module liquidlink_protocol::point {
     /// Use the function carefully as it's possible on-chain point zero out while off-chain calculation ends up in positive
     /// ex: if we have requests with (+1, -3, +2), on-chain: +2; off-chain: 0
     public fun send_sub_point_req<T: drop>(
-        _witness: T,
+        _witness: &T,
         action: String,
         value: u256,   
         ctx: &mut TxContext
@@ -331,7 +331,7 @@ module liquidlink_protocol::point {
 
     #[test_only]
     public fun send_sub_point_req_with_assigned_updater<T: drop>(
-        _witness: T,
+        _witness: &T,
         updater: address,
         owner: address,
         action: String,
@@ -342,7 +342,7 @@ module liquidlink_protocol::point {
     }
 
     public fun send_sub_point_req_with_owner<T: drop>(
-        _witness: T,
+        _witness: &T,
         owner: address,
         action: String,
         value: u256,
@@ -353,7 +353,7 @@ module liquidlink_protocol::point {
 
     // ===== Stake Point =====
     public fun send_stake_point_req<T: drop>(
-        _witness: T,
+        _witness: &T,
         action: String,
         weight: u256,   
         duration: u64,
@@ -364,7 +364,7 @@ module liquidlink_protocol::point {
     }
     #[test_only]
     public fun send_stake_point_req_with_assigned_updater<T: drop>(
-        _witness: T,
+        _witness: &T,
         updater: address,
         owner: address,
         action: String,
@@ -377,7 +377,7 @@ module liquidlink_protocol::point {
     }
 
     public fun send_stake_point_req_with_owner<T: drop>(
-        _witness: T,
+        _witness: &T,
         owner: address,
         action: String,
         weight: u256,
@@ -390,7 +390,7 @@ module liquidlink_protocol::point {
 
     // ===== Unstake Point =====
     public fun send_unstake_point_req<T: drop>(
-        _witness: T,
+        _witness: &T,
         action: String,
         weight: u256,   
         duration: u64,
@@ -401,7 +401,7 @@ module liquidlink_protocol::point {
     }
     #[test_only]
     public fun send_unstake_point_req_with_assigned_updater<T: drop>(
-        _witness: T,
+        _witness: &T,
         updater: address,
         owner: address,
         action: String,
@@ -414,7 +414,7 @@ module liquidlink_protocol::point {
     }
 
     public fun send_unstake_point_req_with_owner<T: drop>(
-        _witness: T,
+        _witness: &T,
         owner: address,
         action: String,
         weight: u256,

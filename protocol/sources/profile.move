@@ -139,13 +139,13 @@ module liquidlink_protocol::profile {
     // === Public-Mutative Functions ===
     public fun point_key_mut<T: drop>(
         reg: &mut ProfileRegistry,
-        _: T
+        _witness: &mut T
     ):&mut PointKey<T>{
         df::borrow_mut(&mut reg.id, type_name::get<T>())
     }
     public fun borrow_df_state_mut<T, S: store>(
         self: &mut Profile,
-        _: &mut PointKey<T>
+        _point_key: &mut PointKey<T>
     ):&mut S{
         let type_ = type_name::get<T>();
         assert!(df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
@@ -202,7 +202,7 @@ module liquidlink_protocol::profile {
     }
 
     public fun register_point_module<T:drop>(
-        _: &AdmincCap,
+        _cap: &AdmincCap,
         reg: &mut ProfileRegistry
     ){
         let type_ = type_name::get<T>();
@@ -213,7 +213,7 @@ module liquidlink_protocol::profile {
     }
 
     public fun remove_point_module<T: drop>(
-        _: &AdmincCap,
+        _cap: &AdmincCap,
         reg: &mut ProfileRegistry
     ){
         let type_ = type_name::get<T>();
@@ -236,7 +236,7 @@ module liquidlink_protocol::profile {
 
     public fun add_point_by_admin<T: drop>(
         dashboard: &mut PointDashBoard<T>,
-        _: &AdmincCap,
+        _cap: &AdmincCap,
         req: AddPointRequest<T>
     ){
         point::add_point(dashboard, req);
@@ -244,7 +244,7 @@ module liquidlink_protocol::profile {
 
     public fun sub_point_by_admin<T: drop>(
         dashboard: &mut PointDashBoard<T>,
-        _: &AdmincCap,
+        _cap: &AdmincCap,
         req: SubPointRequest<T>
     ){
         point::sub_point(dashboard, req);
@@ -252,7 +252,7 @@ module liquidlink_protocol::profile {
 
     public fun stake_point_by_admin<T: drop>(
         dashboard: &mut PointDashBoard<T>,
-        _: &AdmincCap,
+        _cap: &AdmincCap,
         req: StakePointRequest<T>,
     ){
         point::stake_point<T>(dashboard, req);
@@ -260,7 +260,7 @@ module liquidlink_protocol::profile {
 
     public fun unstake_point_by_admin<T: drop>(
         dashboard: &mut PointDashBoard<T>,
-        _: &AdmincCap,
+        _cap: &AdmincCap,
         req: UnstakePointRequest<T>
     ){
         point::unstake_point<T>(dashboard, req);
