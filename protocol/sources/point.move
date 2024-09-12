@@ -85,7 +85,7 @@ module liquidlink_protocol::point {
             option::none()
         }
     }
-    public fun get_user_iufo_points<T>(
+    public fun get_user_info_points<T>(
         dashboard: &PointDashBoard<T>,
         user: address,
         clock: &Clock
@@ -236,7 +236,7 @@ module liquidlink_protocol::point {
             );
         }else{
             let config = &mut info.configs[&action];
-            let acc_points = config.checkpoint(timestamp, weight, duration, true);
+            let acc_points = config.checkpoint(timestamp, weight, duration);
                
             // update dashboard
             dashboard.total_points = dashboard.total_points + acc_points;
@@ -271,7 +271,7 @@ module liquidlink_protocol::point {
         
         if(info.configs.contains(&action)){
             let config = &mut info.configs[&action];
-            let acc_points = config.checkpoint(timestamp, weight, duration, false);
+            let acc_points = config.checkpoint(timestamp, weight, duration);
 
             // update dashboard
             dashboard.total_points = dashboard.total_points + acc_points;
@@ -550,8 +550,7 @@ module liquidlink_protocol::point {
         config: &mut Config,
         timestamp: u64,
         weight: u256,
-        duration: u64,
-        stake: bool
+        duration: u64
     ):u256{
         assert!(timestamp > config.last_update, ERR_OBSOLETE_REQUEST);
         let acc_points = calculate_config_points(config, timestamp);

@@ -179,7 +179,7 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
 
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
             assert!(user_point == point, 404);
 
             test::return_shared(dashboard);
@@ -203,7 +203,7 @@ module liquidlink_protocol::protocol_tests {
         // validate points
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             assert!(user_point == 0, 404);
 
@@ -304,7 +304,7 @@ module liquidlink_protocol::protocol_tests {
         // validation
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             assert!(user_point == 0, 404);
 
@@ -315,7 +315,7 @@ module liquidlink_protocol::protocol_tests {
         clock.add_time(86400 * 1000);
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             assert!(user_point == 1_000_000_000, 404);
 
@@ -326,7 +326,7 @@ module liquidlink_protocol::protocol_tests {
         clock.add_time(6 * 86400 * 1000);
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             assert!(user_point == 7 * 1_000_000_000, 404);
 
@@ -355,7 +355,7 @@ module liquidlink_protocol::protocol_tests {
         clock.add_time(1 * 86400 * 1000);
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
             assert!(user_point == 7 * 1_000_000_000 + 0_500_000_000, 404);
 
             test::return_shared(dashboard);
@@ -365,7 +365,7 @@ module liquidlink_protocol::protocol_tests {
         clock.add_time(6 * 86400 * 1000);
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             assert!(user_point == 7 * 1_000_000_000 + 7 * 0_500_000_000, 404);
 
@@ -391,7 +391,7 @@ module liquidlink_protocol::protocol_tests {
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
 
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
             assert!(user_point == 11 * 1_000_000_000, 404);
 
             test::return_shared(dashboard);
@@ -416,7 +416,7 @@ module liquidlink_protocol::protocol_tests {
 
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
             assert!(user_point == 10_500_000_000, 404);
 
             test::return_shared(dashboard);
@@ -445,7 +445,7 @@ module liquidlink_protocol::protocol_tests {
         clock.add_time(100 * 1000);
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             let elapsed = 100 * 1000;
             let mut weight = 0_500_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
@@ -463,7 +463,7 @@ module liquidlink_protocol::protocol_tests {
         clock.add_time(86300 * 1000); // meet 1 day required duration, exclude points from PSM action as didn't meet minimum requirement
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             let elapsed = (86300 + 100) * 1000;
             let mut weight = 0_500_000_000; // new_weight = 10 ** 9 - 5 * 10 ** 9
@@ -481,7 +481,7 @@ module liquidlink_protocol::protocol_tests {
         clock.add_time(6 * 86400 * 1000); // meet 1 week duration
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             assert!(user_point == 24_000_000_000, 404);
 
@@ -511,7 +511,7 @@ module liquidlink_protocol::protocol_tests {
 
         next_tx(s,a);{
             let dashboard = test::take_shared<PointDashBoard<FAKE_OTW>>(s);
-            let user_point = dashboard.get_user_iufo_points(a, &clock);
+            let user_point = dashboard.get_user_info_points(a, &clock);
 
             assert!(user_point == 24_000_000_000, 404);
 
