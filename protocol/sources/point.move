@@ -568,14 +568,17 @@ module liquidlink_protocol::point {
         weight: u256,
         duration: u64
     ):u256{
-        assert!(timestamp > config.last_update, ERR_OBSOLETE_REQUEST);
-        let acc_points = calculate_config_points(config, timestamp);
+        if(timestamp >= config.last_update){
+            let acc_points = calculate_config_points(config, timestamp);
 
-        config.weight = weight;
-        config.last_update = timestamp;
-        config.duration = duration;
-        
-        acc_points
+            config.weight = weight;
+            config.last_update = timestamp;
+            config.duration = duration;
+
+            acc_points
+        }else{
+            0
+        }
     }
 
     fun calculate_config_points(config: &Config, current_time: u64):u256{

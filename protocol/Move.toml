@@ -1,7 +1,8 @@
 [package]
 name = "LiquidlinkProtocol"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move]
-published-at = "0xb5b6c91d3161c1fc27075339dbe8afafef5f85f6762157be484ed49583f7ef53"
+# published-at = "0xb5b6c91d3161c1fc27075339dbe8afafef5f85f6762157be484ed49583f7ef53"
+published-at = "0xca103c2aff05c82269bfe1f658cf7b9f746d0ec6b3cebd3b9649003c2993e822"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
@@ -20,7 +21,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-liquidlink_protocol = "0xb5b6c91d3161c1fc27075339dbe8afafef5f85f6762157be484ed49583f7ef53"
+liquidlink_protocol = "0x00"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
