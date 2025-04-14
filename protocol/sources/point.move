@@ -69,51 +69,20 @@ module liquidlink_protocol::point {
         user_infos: Table<address, UserInfo>,
     }
     public(package) fun new_point_dashboard<T>(ctx: &mut TxContext):PointDashBoard<T>{
-        PointDashBoard<T>{
-            id: object::new(ctx),
-            total_points: 0,
-            user_infos: table::new(ctx)
-        }
+        abort 0
     }
     public fun total_points<T>(dashboard: &PointDashBoard<T>):u256{
         dashboard.total_points
     }
     public fun get_user_info<T>(dashboard: &PointDashBoard<T>, user: address):Option<UserInfo>{
-        if(dashboard.user_infos.contains(user)){
-            option::some(dashboard.user_infos[user])
-        }else{
-            option::none()
-        }
+        abort 0
     }
     public fun get_user_info_points<T>(
         dashboard: &PointDashBoard<T>,
         user: address,
         clock: &Clock
     ):u256{
-        let mut points = 0;
-        let info = get_user_info<T>(dashboard, user);
-        if(info.is_some()){
-            let info_ = info.borrow();
-
-            //. settled points
-            let keys = info_.points.keys();
-            let (mut i, len) = (0, keys.length());
-            while(i < len){
-                points = points + info_.points[&keys[i]];
-                i = i + 1;
-            };
-
-            // configs
-            let keys = info_.configs.keys();
-            let (mut i, len) = (0, keys.length());
-            while(i < len){
-                let accumulated_points = calculate_config_points(&info_.configs[&keys[i]], clock.timestamp_ms());
-                points = points + accumulated_points;
-                i = i + 1;
-            };
-        };
-
-        points
+        abort 0
     }
 
     public fun get_user_info_point_by_action<T>(
@@ -122,15 +91,7 @@ module liquidlink_protocol::point {
         action: String,
         clock: &Clock
     ):u256{
-        if(!dashboard.user_infos.contains(user)){
-            0
-        }else{
-            let user_info = dashboard.user_infos[user];
-            let points = if(user_info.points.contains(&action)) user_info.points[&action] else 0;
-            let staking_points = if(user_info.configs.contains(&action)) calculate_config_points(&user_info.configs[&action], clock.timestamp_ms()) else 0;
-
-            points + staking_points
-        }
+        abort 0
     }
 
     // === event ===
@@ -174,131 +135,28 @@ module liquidlink_protocol::point {
         dashboard: &mut PointDashBoard<T>,
         req: AddPointRequest<T>
     ){
-        let AddPointRequest{
-            id,
-            owner,
-            action,
-            value
-        } = req;
-        object::delete(id);
-
-        init_user_info(dashboard, owner);
-
-        let user_info = &mut dashboard.user_infos[owner];
-        if(!user_info.points.contains(&action)){
-            user_info.points.insert(action, value);
-        }else{
-            let prev_point = user_info.points[&action];
-            *&mut user_info.points[&action] = prev_point + value;
-        };
-
-        dashboard.total_points = dashboard.total_points + value;
+        abort 0
     }
 
     public(package) fun sub_point<T: drop>(
         dashboard: &mut PointDashBoard<T>,
         req: SubPointRequest<T>
     ){
-        let SubPointRequest{
-            id,
-            owner,
-            action,
-            value
-        } = req;
-        object::delete(id);
-
-        init_user_info(dashboard, owner);
-
-        let user_info = &mut dashboard.user_infos[owner];
-        if(user_info.points.contains(&action)){
-            let prev_user_point = *&user_info.points[&action];
-    
-            let deducted_points = if(prev_user_point <= value){
-                user_info.points.remove(&action);
-                prev_user_point
-            }else{
-                *&mut user_info.points[&action] = prev_user_point - value;
-                value
-            };
-            dashboard.total_points = dashboard.total_points - deducted_points;
-        };
+        abort 0
     }
 
     public(package) fun stake_point<T: drop>(
         dashboard: &mut PointDashBoard<T>,
         req: StakePointRequest<T>
     ){
-        let StakePointRequest<T>{
-            id,
-            owner,
-            action,
-            weight,
-            timestamp,
-            duration
-        } = req;
-        object::delete(id);
-
-        init_user_info(dashboard, owner);
-
-        let info = &mut dashboard.user_infos[owner];
-        if(!info.configs.contains(&action)){
-            info.configs.insert(
-                action,
-                Config{
-                    weight,
-                    last_update: timestamp,
-                    duration
-                }
-            );
-        }else{
-            let config = &mut info.configs[&action];
-            let acc_points = config.checkpoint(timestamp, weight, duration);
-               
-            // update dashboard
-            dashboard.total_points = dashboard.total_points + acc_points;
-
-            // settled staked points
-            if(!info.points.contains(&action)){
-                info.points.insert(action, acc_points);
-            }else{
-                let prev_point = info.points[&action];
-                *&mut info.points[&action] = prev_point + acc_points;
-            };
-        }
+        abort 0
     }
 
     public(package) fun unstake_point<T: drop>(
         dashboard: &mut PointDashBoard<T>,
         req: UnstakePointRequest<T>
     ){
-        let UnstakePointRequest<T>{
-            id,
-            owner,
-            action,
-            weight,
-            timestamp,
-            duration
-        } = req;
-        object::delete(id);
-
-        init_user_info(dashboard, owner);
-
-        let info = &mut dashboard.user_infos[owner];
-        
-        if(info.configs.contains(&action)){
-            let config = &mut info.configs[&action];
-            let acc_points = config.checkpoint(timestamp, weight, duration);
-
-            // update dashboard
-            dashboard.total_points = dashboard.total_points + acc_points;
-            // settled staked points
-            if(!info.points.contains(&action)){
-                info.points.insert(action, acc_points);
-            }else{
-                let prev_point = info.points[&action];
-                *&mut info.points[&action] = prev_point + acc_points;
-            };
-        }
+        abort 0
     }
 
     // ===== Add Point =====
@@ -308,7 +166,7 @@ module liquidlink_protocol::point {
         value: u256,   
         ctx: &mut TxContext
     ){
-        send_add_point_req_<T>(constant::point_updater(), ctx.sender(), action, value, ctx);
+        abort 0
     }
     #[test_only]
     public fun send_add_point_req_with_assigned_updater<T: drop>(
@@ -319,7 +177,7 @@ module liquidlink_protocol::point {
         value: u256,   
         ctx: &mut TxContext
     ){
-        send_add_point_req_<T>(updater, owner, action, value, ctx);
+        abort 0
     }
 
     public fun send_add_point_req_with_owner<T: drop>(
@@ -329,7 +187,7 @@ module liquidlink_protocol::point {
         value: u256,
         ctx: &mut TxContext
     ){
-        send_add_point_req_<T>(constant::point_updater(), owner, action, value, ctx);
+        abort 0
     }
 
     // ===== Sub Point =====
@@ -341,7 +199,7 @@ module liquidlink_protocol::point {
         value: u256,   
         ctx: &mut TxContext
     ){
-        send_sub_point_req_<T>(constant::point_updater(), ctx.sender(), action, value, ctx);
+        abort 0
     }
 
     #[test_only]
@@ -353,7 +211,7 @@ module liquidlink_protocol::point {
         value: u256,   
         ctx: &mut TxContext
     ){
-        send_sub_point_req_<T>(updater, owner, action, value, ctx);
+        abort 0
     }
 
     public fun send_sub_point_req_with_owner<T: drop>(
@@ -363,7 +221,7 @@ module liquidlink_protocol::point {
         value: u256,
         ctx: &mut TxContext
     ){
-        send_sub_point_req_<T>(constant::point_updater(), owner, action, value, ctx);
+        abort 0
     }
 
     // ===== Stake Point =====
@@ -375,7 +233,7 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_stake_point_req_<T>(constant::point_updater(), ctx.sender(), action, weight, duration, clock, ctx);
+        abort 0
     }
     #[test_only]
     public fun send_stake_point_req_with_assigned_updater<T: drop>(
@@ -388,7 +246,7 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_stake_point_req_<T>(updater, owner, action, weight, duration, clock, ctx);
+        abort 0
     }
 
     public fun send_stake_point_req_with_owner<T: drop>(
@@ -400,7 +258,7 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_stake_point_req_<T>(constant::point_updater(), owner, action, weight, duration, clock, ctx);
+        abort 0
     }
 
     // ===== Unstake Point =====
@@ -412,7 +270,7 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_unstake_point_req_<T>(constant::point_updater(), ctx.sender(), action, weight, duration, clock, ctx);
+        abort 0
     }
     #[test_only]
     public fun send_unstake_point_req_with_assigned_updater<T: drop>(
@@ -425,7 +283,7 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_unstake_point_req_<T>(updater, owner, action, weight, duration, clock, ctx);
+        abort 0
     }
 
     public fun send_unstake_point_req_with_owner<T: drop>(
@@ -437,20 +295,12 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        send_unstake_point_req_<T>(constant::point_updater(), owner, action, weight, duration, clock, ctx);
+        abort 0
     }
 
     // private function
     fun init_user_info<T: drop>(dashboard: &mut PointDashBoard<T>, owner: address){
-        if(!dashboard.user_infos.contains(owner)){
-            dashboard.user_infos.add(
-                owner, 
-                UserInfo{ 
-                    points: vec_map::empty(),
-                    configs: vec_map::empty()
-                }
-            );
-        };
+        abort 0
     }
     fun send_add_point_req_<T: drop>(
         updater: address,
@@ -459,21 +309,7 @@ module liquidlink_protocol::point {
         value: u256,   
         ctx: &mut TxContext
     ){
-        let point = AddPointRequest<T>{
-            id: object::new(ctx),
-            owner,
-            action,
-            value
-        };
-        event::emit(
-            LiquidlinkAddPointEvent<T>{
-                owner,
-                action,
-                req: object::id(&point),
-                value
-            }
-        );
-        transfer::transfer(point, updater);
+        abort 0
     }
 
     fun send_sub_point_req_<T: drop>(
@@ -483,21 +319,7 @@ module liquidlink_protocol::point {
         value: u256,   
         ctx: &mut TxContext
     ){
-        let point = SubPointRequest<T>{
-            id: object::new(ctx),
-            owner,
-            action,
-            value
-        };
-        event::emit(
-            LiquidlinkSubPointEvent<T>{
-                owner,
-                action,
-                req: object::id(&point),
-                value
-            }
-        );
-        transfer::transfer(point, updater);
+        abort 0
     }
 
     fun send_stake_point_req_<T: drop>(
@@ -509,26 +331,7 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        let timestamp = clock.timestamp_ms();
-        let req = StakePointRequest<T>{
-            id: object::new(ctx),
-            owner,
-            action,
-            weight,
-            timestamp,
-            duration
-        };
-        event::emit(
-            LiquidlinkStakePointEvent<T>{
-                owner,
-                action,
-                req: object::id(&req),
-                weight,
-                timestamp,
-                duration
-            }
-        );
-        transfer::transfer(req, updater);
+        abort 0
     }
 
     fun send_unstake_point_req_<T: drop>(
@@ -540,26 +343,7 @@ module liquidlink_protocol::point {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        let timestamp = clock.timestamp_ms();
-        let req = UnstakePointRequest<T>{
-            id: object::new(ctx),
-            owner,
-            action,
-            weight,
-            duration,
-            timestamp
-        };
-        event::emit(
-            LiquidlinkUnstakePointEvent<T>{
-                owner,
-                action,
-                req: object::id(&req),
-                weight,
-                timestamp,
-                duration
-            }
-        );
-        transfer::transfer(req, updater);
+        abort 0
     }
 
     fun checkpoint(
@@ -568,22 +352,10 @@ module liquidlink_protocol::point {
         weight: u256,
         duration: u64
     ):u256{
-        if(timestamp >= config.last_update){
-            let acc_points = calculate_config_points(config, timestamp);
-
-            config.weight = weight;
-            config.last_update = timestamp;
-            config.duration = duration;
-
-            acc_points
-        }else{
-            0
-        }
+        abort 0
     }
 
     fun calculate_config_points(config: &Config, current_time: u64):u256{
-        if(config.duration == 0 ) return 0;
-        let elapsed = (( current_time - config.last_update ) as u256);
-        ( config.weight as u256 ) * elapsed / ( config.duration as u256 )
+        abort 0
     }
 }

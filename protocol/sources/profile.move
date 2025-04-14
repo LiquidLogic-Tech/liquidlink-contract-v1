@@ -205,22 +205,14 @@ module liquidlink_protocol::profile {
         _cap: &AdmincCap,
         reg: &mut ProfileRegistry
     ){
-        let type_ = type_name::get<T>();
-        assert!(!df::exists_(&reg.id, type_), ERR_REGISTERED_MODULE);
-
-        let key = point::new_point_key<T>();
-        df::add(&mut reg.id, type_, key);
+        abort 0
     }
 
     public fun remove_point_module<T: drop>(
         _cap: &AdmincCap,
         reg: &mut ProfileRegistry
     ){
-        let type_ = type_name::get<T>();
-        assert!(df::exists_(&reg.id, type_), ERR_NOT_EXIST_TYPE);
-
-        let profile_key:PointKey<T> = df::remove(&mut reg.id, type_);
-        point::drop_point_key(profile_key);
+        abort 0
     }
 
     #[allow(lint(share_owned))]
@@ -229,9 +221,7 @@ module liquidlink_protocol::profile {
         reg: &mut ProfileRegistry,
         ctx: &mut TxContext
     ){
-        if(!module_exist<T>(reg)) register_point_module<T>(cap, reg);
-        let dashboard = point::new_point_dashboard<T>(ctx);
-        transfer::public_share_object(dashboard);
+        abort 0
     }
 
     public fun add_point_by_admin<T: drop>(
@@ -239,7 +229,7 @@ module liquidlink_protocol::profile {
         _cap: &AdmincCap,
         req: AddPointRequest<T>
     ){
-        point::add_point(dashboard, req);
+        abort 0
     }
 
     public fun sub_point_by_admin<T: drop>(
@@ -247,7 +237,7 @@ module liquidlink_protocol::profile {
         _cap: &AdmincCap,
         req: SubPointRequest<T>
     ){
-        point::sub_point(dashboard, req);
+        abort 0
     }
 
     public fun stake_point_by_admin<T: drop>(
@@ -255,7 +245,7 @@ module liquidlink_protocol::profile {
         _cap: &AdmincCap,
         req: StakePointRequest<T>,
     ){
-        point::stake_point<T>(dashboard, req);
+        abort 0
     }
 
     public fun unstake_point_by_admin<T: drop>(
@@ -263,7 +253,7 @@ module liquidlink_protocol::profile {
         _cap: &AdmincCap,
         req: UnstakePointRequest<T>
     ){
-        point::unstake_point<T>(dashboard, req);
+        abort 0
     }
 
     // === Public-Package Functions ===
@@ -277,11 +267,7 @@ module liquidlink_protocol::profile {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        let owner = ctx.sender();
-        let metadata = vec_map::from_keys_values(metadata_keys, metadata_values);
-        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, metadata, ctx);
-
-        transfer::transfer(profile, owner);
+        abort 0
     }
 
     public fun register_for(
@@ -295,50 +281,34 @@ module liquidlink_protocol::profile {
         clock: &Clock,
         ctx: &mut TxContext
     ){
-        let metadata = vec_map::from_keys_values(metadata_keys, metadata_values);
-        let profile = register_(reg, owner, clock.timestamp_ms(), avatar_url, name, description, metadata, ctx);
-
-        transfer::transfer(profile, owner);
+        abort 0
     }
     public fun drop(
         profile: Profile,
         reg: &mut ProfileRegistry
     ){
-        let Profile {
-            id,
-            owner,
-            created_at: _,
-            avatar_url: _,
-            name: _,
-            description: _,
-            metadata: _,
-        } = profile;
-
-        let profile_id = reg.registry.remove(owner);
-
-        event::profile_destroyed(owner, profile_id);
-        object::delete(id);
+        abort 0
     }
 
     public fun update_avatar_url(
         self: &mut Profile,
         url: String,
     ){
-        self.avatar_url = url;
+        abort 0
     }
 
     public fun update_name(
         self: &mut Profile,
         name: String,
     ){
-        self.name = name;
+        abort 0
     }
 
     public fun update_description(
         self: &mut Profile,
         description: String,
     ){
-        self.description = description;
+        abort 0
     }
 
     public fun update_metadata(
@@ -346,19 +316,14 @@ module liquidlink_protocol::profile {
         key: String,
         value: String
     ){
-        if(self.metadata.contains(&key)){
-            let prev_value = &mut self.metadata[&key];
-            *prev_value = value;
-        }else{
-            self.metadata.insert(key, value);
-        };
+        abort 0
     }
 
     public fun remove_metadata(
         self: &mut Profile,
         key: String
     ){
-        self.metadata.remove(&key);
+        abort 0
     }
 
     public fun add_df_state<T, S: store>(
@@ -366,10 +331,7 @@ module liquidlink_protocol::profile {
         _key: &mut PointKey<T>,
         state: S
     ){
-        let type_ = type_name::get<T>();
-        assert!(!df::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
-
-        df::add(&mut self.id, type_, state);
+        abort 0
     }
 
     public fun add_dof_state<T, S: key + store>(
@@ -377,30 +339,21 @@ module liquidlink_protocol::profile {
         _key: &mut PointKey<T>,
         state: S
     ){
-        let type_ = type_name::get<T>();
-        assert!(!dof::exists_(&self.id, type_), ERR_ALREADY_ADDED_STATE);
-
-        dof::add(&mut self.id, type_, state);
+        abort 0
     }
 
     public fun remove_df_state<T, S: store>(
         self: &mut Profile,
         _key: &mut PointKey<T>,
     ):S{
-        let type_ = type_name::get<T>();
-        assert!(df::exists_(&self.id, type_), ERR_NOT_EXIST_STATE);
-
-        df::remove(&mut self.id, type_)
+        abort 0
     }
 
     public fun remove_dof_state<T, S: key + store>(
         self: &mut Profile,
         _key: &mut PointKey<T>
     ):S{
-        let type_ = type_name::get<T>();
-        assert!(dof::exists_(&self.id, type_), ERR_NOT_EXIST_STATE);
-
-        dof::remove(&mut self.id, type_)
+        abort 0
     }
 
     // === Private Functions ===
@@ -414,20 +367,7 @@ module liquidlink_protocol::profile {
         metadata: VecMap<String, String>,
         ctx: &mut TxContext
     ):Profile{
-        let profile = Profile{
-            id: object::new(ctx),
-            owner,
-            created_at,
-            avatar_url,
-            name,
-            description,
-            metadata
-        };
-        let profile_id = object::id(&profile);
-        event::profile_created(owner, profile_id);
-        reg.registry.add(owner, profile_id);
-        
-        profile
+        abort 0
     }
 
     // === Test Functions ===
